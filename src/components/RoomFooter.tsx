@@ -42,10 +42,9 @@ export function RoomFooter({ room, role, mode, onLeave }: RoomFooterProps) {
       const url = new URL(window.location.href);
       url.searchParams.set('room', room);
       url.searchParams.set('role', targetRole);
-      url.searchParams.set('mode', mode);
       return url.toString();
     },
-    [room, mode]
+    [room]
   );
 
   const copyLink = useCallback(

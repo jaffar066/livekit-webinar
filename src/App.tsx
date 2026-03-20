@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useMemo, useState, useEffect } from 'react';
 import '@livekit/components-styles';
 import { JoinScreen } from './components/JoinScreen';
 import { RoomView } from '../src/components/RoomView';
@@ -38,8 +38,6 @@ function buildUrl(params: { room?: string | null; role?: Role | null; mode?: Mod
 
   if (params.mode === null) {
     url.searchParams.delete('mode');
-  } else if (params.mode) {
-    url.searchParams.set('mode', params.mode);
   }
 
   window.history.replaceState({}, '', url.toString());
@@ -57,6 +55,13 @@ export default function App() {
     return { room: roomParam, role, mode };
   }, []);
 
+  // Remove `mode` from the URL on initial load so it is not present afterwards.
+  useEffect(() => {
+    if (urlParams.mode) {
+      buildUrl({ room: urlParams.room, role: urlParams.role, mode: null });
+    }
+  }, [urlParams.mode, urlParams.room, urlParams.role]);
+
   const initialRoom = useMemo(() => {
     return urlParams.room ?? randomRoomId();
   }, [urlParams.room]);
@@ -64,10 +69,6 @@ export default function App() {
   const initialRole = useMemo(() => {
     return urlParams.role ?? 'host';
   }, [urlParams.role]);
-
-  const initialMode = useMemo(() => {
-    return urlParams.mode ?? 'webinar';
-  }, [urlParams.mode]);
 
   const storedSession = useMemo(() => {
     if (typeof window === 'undefined') return null;
@@ -83,14 +84,18 @@ export default function App() {
   const sessionMatchesUrl =
     !!storedSession &&
     (!urlParams.room || storedSession.room === urlParams.room) &&
-    (!urlParams.role || storedSession.role === urlParams.role) &&
-    (!urlParams.mode || storedSession.mode === urlParams.mode);
+    (!urlParams.role || storedSession.role === urlParams.role);
 
-  const [forcedMode, setForcedMode] = useState<Mode | undefined>(() => urlParams.mode ?? undefined);
+  const [forcedMode, setForcedMode] = useState<Mode | undefined>(
+    () => urlParams.mode ?? (urlParams.role === 'cohost' ? 'webinar' : undefined),
+  );
+  const [preservedRole, setPreservedRole] = useState<Role | undefined>(() =>
+    urlParams.role ?? undefined,
+  );
 
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(() => {
-    if (urlParams.room || urlParams.role || urlParams.mode) {
-      return sessionMatchesUrl ? storedSession : null;
+    if (urlParams.room || urlParams.role) {
+      return null;
     }
     return storedSession;
   });
@@ -114,14 +119,15 @@ export default function App() {
     window.localStorage.setItem('livekit-session', JSON.stringify(newSession));
     setSessionInfo(newSession);
     setRole(role);
+    setPreservedRole(role);
     buildUrl(newSession);
   };
 
   const handleLeave = () => {
     window.localStorage.removeItem('livekit-session');
     setSessionInfo(null);
-    setRole(initialRole);
-    setForcedMode(undefined);
+
+    setForcedMode(preservedRole === 'cohost' ? 'webinar' : undefined);
     buildUrl({ room: null, role: null, mode: null });
   };
 
@@ -130,13 +136,12 @@ export default function App() {
   if (!sessionInfo) {
     return (
       <JoinScreen
-        onJoin={handleJoin}
-        defaultIdentity={''}
-        defaultRole={initialRole}
-        defaultMode={initialMode}
-        defaultCameraOn={storedSession?.cameraOn ?? false}
-        forcedMode={forcedMode}
-      />
+          onJoin={handleJoin}
+          defaultIdentity={''}
+          defaultRole={preservedRole ?? role}
+          defaultCameraOn={storedSession?.cameraOn ?? false}
+          forcedMode={forcedMode}
+        />
     );
   }
 
