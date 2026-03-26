@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react';
-import {
-    LiveKitRoom,
-    RoomAudioRenderer,
-    ParticipantTile,
-    useParticipants,
-} from '@livekit/components-react';
-import { Track } from 'livekit-client';
+import { LiveKitRoom, RoomAudioRenderer, useParticipants } from '@livekit/components-react';
 import { RoomHeader } from './RoomHeader';
 import { RoomFooter } from './RoomFooter';
 import { type Role, type Mode } from './types';
+import OpentokLayout from './OpentokLayout';
 
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type RoomViewProps = {
     identity: string;
@@ -36,6 +32,8 @@ function RoomContent({
     const participants = useParticipants();
     const remoteCount = participants.filter((p) => !p.isLocal).length;
 
+    // All layout logic moved into `OpentokLayout` component.
+
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <RoomHeader
@@ -45,59 +43,8 @@ function RoomContent({
                 remoteCount={remoteCount}
             />
 
-            <main
-                style={{
-                    flex: 1,
-                    padding: 12,
-                    overflow: 'auto',
-                }}
-            >
-                <div
-                    style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 12,
-                        padding: 12,
-                    }}
-                >
-                    {participants
-                        .filter((participant) => {
-                            if (participant.isLocal && role === 'viewer') return false;
-                            if (!participant.isLocal) {
-                                const hasCamera = participant.getTrackPublication(Track.Source.Camera);
-                                const hasScreen = participant.getTrackPublication(Track.Source.ScreenShare);
-                                const hasMic = participant.getTrackPublication(Track.Source.Microphone);
-                                if (!hasCamera && !hasScreen && !hasMic) return false;
-                            }
-                            return true;
-                        })
-                        .map((participant) => (
-                            <div
-                                key={participant.identity}
-                                style={{
-                                    width: 720,
-                                    height: 405,
-                                    borderRadius: 14,
-                                    overflow: 'hidden',
-                                    boxShadow: '0 10px 24px rgba(0,0,0,0.12)',
-                                    background: '#1a1a1a',
-                                    position: 'relative',
-                                }}
-                            >
-                                <ParticipantTile
-                                    trackRef={{
-                                        participant: participant,
-                                        source: Track.Source.Camera,
-                                        publication: participant.getTrackPublication(Track.Source.Camera),
-                                    }}
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                        ))}
-                </div>
-            </main>
+            {/* opentok-layout container */}
+            <OpentokLayout participants={participants} role={role} />
 
             <RoomFooter room={room} role={role} mode={mode} onLeave={onLeave} />
 
@@ -106,9 +53,20 @@ function RoomContent({
     );
 }
 
-export function RoomView({ identity, room, role, mode, cameraOn, onLeave, tokenServerUrl }: RoomViewProps) {
+// ─── Outer component: token fetching + LiveKitRoom (unchanged) ────────────────
+export function RoomView({
+    identity,
+    room,
+    role,
+    mode,
+    cameraOn,
+    onLeave,
+    tokenServerUrl,
+}: RoomViewProps) {
     const tokenEndpoint =
-        tokenServerUrl ?? (import.meta.env.VITE_TOKEN_SERVER_URL as string) ?? 'http://localhost:3000/get-token';
+        tokenServerUrl ??
+        (import.meta.env.VITE_TOKEN_SERVER_URL as string) ??
+        'http://localhost:3000/get-token';
 
     const [token, setToken] = useState<string | undefined>(undefined);
     const [serverUrl, setServerUrl] = useState<string>(
@@ -153,7 +111,9 @@ export function RoomView({ identity, room, role, mode, cameraOn, onLeave, tokenS
         return (
             <div style={{ padding: 24, fontFamily: 'Segoe UI, Arial, sans-serif' }}>
                 <div style={{ marginBottom: 8, fontWeight: 600, color: '#b91c1c' }}>Token error</div>
-                <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: 'rgba(0,0,0,0.75)' }}>{tokenError}</pre>
+                <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: 'rgba(0,0,0,0.75)' }}>
+                    {tokenError}
+                </pre>
                 <div style={{ marginTop: 12, fontSize: 13, color: 'rgba(0,0,0,0.65)' }}>
                     Tried: <code>{tokenEndpoint}</code>
                 </div>
@@ -186,8 +146,12 @@ export function RoomView({ identity, room, role, mode, cameraOn, onLeave, tokenS
         >
             {connectionError ? (
                 <div style={{ padding: 24, fontFamily: 'Segoe UI, Arial, sans-serif' }}>
-                    <div style={{ marginBottom: 8, fontWeight: 600, color: '#b91c1c' }}>Connection error</div>
-                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: 'rgba(0,0,0,0.75)' }}>
+                    <div style={{ marginBottom: 8, fontWeight: 600, color: '#b91c1c' }}>
+                        Connection error
+                    </div>
+                    <pre
+                        style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: 'rgba(0,0,0,0.75)' }}
+                    >
                         {connectionError}
                     </pre>
                     <div style={{ marginTop: 12, fontSize: 13, color: 'rgba(0,0,0,0.65)' }}>

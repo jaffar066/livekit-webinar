@@ -111,7 +111,7 @@ export function RoomFooter({ room, role, mode, onLeave }: RoomFooterProps) {
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: 8,
-        background: 'rgba(37, 36, 36, 0.95)',
+        background: '#1a1a1a',
         backdropFilter: 'blur(10px)',
         zIndex: 10,
       }}

@@ -1,4 +1,5 @@
 import { type Mode, type Role } from './types';
+import logo from '../assets/image.png';
 
 export type RoomHeaderProps = {
   mode: Mode;
@@ -15,19 +16,33 @@ export function RoomHeader({ mode, role, participants, remoteCount }: RoomHeader
   return (
     <header
       style={{
-        padding: 12,
-        borderBottom: '1px solid rgba(0,0,0,0.08)',
+        padding: '14px 20px',
+        background: '#1a1a1a',
+        boxShadow: '0 4px 18px rgba(0,0,0,0.6)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: 12,
       }}
     >
-      <div>
-        <div style={{ fontSize: 24, color: 'rgba(0,0,0,0.7)' }}>
-          {modeLabel} • {roleLabel}
+      {/* Left: logo/image */}
+      <div style={{ display: 'flex', alignItems: 'center', minWidth: 56 }}>
+        <img src={logo} alt="logo" style={{ width: 70, height: 60, objectFit: 'contain', borderRadius: 8 }} />
+      </div>
+
+      {/* Center: title */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: 20, color: '#fff', fontWeight: 600 }}>
+            {modeLabel} • {roleLabel}
+          </div>
         </div>
-        <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.55)' }}>
+      </div>
+
+      {/* Right: participants */}
+      <div style={{ minWidth: 180, display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>
           Participants: {participants} (others: {remoteCount})
         </div>
       </div>
