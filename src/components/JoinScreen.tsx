@@ -9,6 +9,7 @@ export type JoinProps = {
   defaultMode?: Mode;
   defaultCameraOn?: boolean;
   forcedMode?: Mode;
+  forcedRole?: Role;
 };
 
 
@@ -19,6 +20,7 @@ export function JoinScreen({
   defaultMode,
   defaultCameraOn = false,
   forcedMode,
+  forcedRole,
 }: JoinProps) {
   const [identity, setIdentity] = useState(defaultIdentity);
   const [selectedMode, setSelectedMode] = useState<Mode | undefined>(
@@ -85,9 +87,9 @@ export function JoinScreen({
         <div style={{ marginBottom: 16, fontSize: 13, color: '#4b5563' }}>
           Joining as{' '}
           <strong>
-            {defaultRole === 'host'
+            {(forcedRole ?? defaultRole) === 'host'
               ? 'Host'
-              : defaultRole === 'cohost'
+              : (forcedRole ?? defaultRole) === 'cohost'
               ? 'Co-host'
               : 'Viewer'}
           </strong>{' '}
@@ -105,7 +107,7 @@ export function JoinScreen({
             if (!selectedMode) return;
             onJoin({
               identity: identity.trim(),
-              role: defaultRole,
+              role: forcedRole ?? defaultRole,
               mode: selectedMode,
               cameraOn: selectedCameraOn,
             });

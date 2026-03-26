@@ -62,29 +62,40 @@ function RoomContent({
                         padding: 12,
                     }}
                 >
-                    {participants.map((participant) => (
-                        <div
-                            key={participant.identity}
-                            style={{
-                                width: 720,
-                                height: 405,
-                                borderRadius: 14,
-                                overflow: 'hidden',
-                                boxShadow: '0 10px 24px rgba(0,0,0,0.12)',
-                                background: '#1a1a1a',
-                                position: 'relative',
-                            }}
-                        >
-                            <ParticipantTile
-                                trackRef={{
-                                    participant: participant,
-                                    source: Track.Source.Camera,
-                                    publication: participant.getTrackPublication(Track.Source.Camera),
+                    {participants
+                        .filter((participant) => {
+                            if (participant.isLocal && role === 'viewer') return false;
+                            if (!participant.isLocal) {
+                                const hasCamera = participant.getTrackPublication(Track.Source.Camera);
+                                const hasScreen = participant.getTrackPublication(Track.Source.ScreenShare);
+                                const hasMic = participant.getTrackPublication(Track.Source.Microphone);
+                                if (!hasCamera && !hasScreen && !hasMic) return false;
+                            }
+                            return true;
+                        })
+                        .map((participant) => (
+                            <div
+                                key={participant.identity}
+                                style={{
+                                    width: 720,
+                                    height: 405,
+                                    borderRadius: 14,
+                                    overflow: 'hidden',
+                                    boxShadow: '0 10px 24px rgba(0,0,0,0.12)',
+                                    background: '#1a1a1a',
+                                    position: 'relative',
                                 }}
-                                style={{ width: '100%', height: '100%' }}
-                            />
-                        </div>
-                    ))}
+                            >
+                                <ParticipantTile
+                                    trackRef={{
+                                        participant: participant,
+                                        source: Track.Source.Camera,
+                                        publication: participant.getTrackPublication(Track.Source.Camera),
+                                    }}
+                                    style={{ width: '100%', height: '100%' }}
+                                />
+                            </div>
+                        ))}
                 </div>
             </main>
 

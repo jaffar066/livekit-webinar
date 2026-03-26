@@ -44,10 +44,15 @@ export function ModeCardSelector({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const isFirstRender = useRef(true);
 
   const selectedCameraOn = mode ? cameraOnState[mode] : false;
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     onChange?.({ mode, cameraOn: selectedCameraOn });
   }, [mode, selectedCameraOn, onChange]);
 

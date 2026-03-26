@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect } from 'react';
+﻿import { useMemo, useState } from 'react';
 import '@livekit/components-styles';
 import { JoinScreen } from './components/JoinScreen';
 import { RoomView } from '../src/components/RoomView';
@@ -23,23 +23,13 @@ function randomRoomId() {
 }
 
 function buildUrl(params: { room?: string | null; role?: Role | null; mode?: Mode | null }) {
-  const url = new URL(window.location.href);
-  if (params.room === null) {
-    url.searchParams.delete('room');
-  } else if (params.room) {
-    url.searchParams.set('room', params.room);
-  }
-
-  if (params.role === null) {
-    url.searchParams.delete('role');
-  } else if (params.role) {
-    url.searchParams.set('role', params.role);
-  }
-
-  if (params.mode === null) {
-    url.searchParams.delete('mode');
-  }
-
+  const url = new URL(window.location.href);  
+  if (params.room === null) { url.searchParams.delete('room'); }
+  else if (params.room) { url.searchParams.set('room', params.room); }
+  if (params.role === null) { url.searchParams.delete('role'); }
+  else if (params.role) { url.searchParams.set('role', params.role); }
+  if (params.mode === null) { url.searchParams.delete('mode'); }
+  else if (params.mode) { url.searchParams.set('mode', params.mode); }
   window.history.replaceState({}, '', url.toString());
 }
 
@@ -50,17 +40,10 @@ export default function App() {
     const roomParam = url.searchParams.get('room');
     const roleParam = url.searchParams.get('role');
     const modeParam = url.searchParams.get('mode');
-    const role = roleParam === 'cohost' || roleParam === 'viewer' ? (roleParam as Role) : null;
+    const role = roleParam === 'cohost' || roleParam === 'viewer' || roleParam === 'host' ? (roleParam as Role) : null;
     const mode = modeParam === 'live' || modeParam === 'webinar' || modeParam === 'conference' ? (modeParam as Mode) : null;
     return { room: roomParam, role, mode };
   }, []);
-
-  // Remove `mode` from the URL on initial load so it is not present afterwards.
-  useEffect(() => {
-    if (urlParams.mode) {
-      buildUrl({ room: urlParams.room, role: urlParams.role, mode: null });
-    }
-  }, [urlParams.mode, urlParams.room, urlParams.role]);
 
   const initialRoom = useMemo(() => {
     return urlParams.room ?? randomRoomId();
@@ -81,20 +64,23 @@ export default function App() {
     }
   }, []);
 
-  const sessionMatchesUrl =
-    !!storedSession &&
-    (!urlParams.room || storedSession.room === urlParams.room) &&
-    (!urlParams.role || storedSession.role === urlParams.role);
-
-  const [forcedMode, setForcedMode] = useState<Mode | undefined>(
-    () => urlParams.mode ?? (urlParams.role === 'cohost' ? 'webinar' : undefined),
-  );
+const [forcedMode, setForcedMode] = useState<Mode | undefined>(
+  () => urlParams.mode ?? undefined
+);
   const [preservedRole, setPreservedRole] = useState<Role | undefined>(() =>
     urlParams.role ?? undefined,
   );
 
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(() => {
     if (urlParams.room || urlParams.role) {
+      // If we have a stored session that matches the URL params, restore it.
+      if (
+        storedSession &&
+        (!urlParams.room || storedSession.room === urlParams.room) &&
+        (!urlParams.role || storedSession.role === urlParams.role)
+      ) {
+        return storedSession;
+      }
       return null;
     }
     return storedSession;
@@ -127,21 +113,21 @@ export default function App() {
     window.localStorage.removeItem('livekit-session');
     setSessionInfo(null);
 
-    setForcedMode(preservedRole === 'cohost' ? 'webinar' : undefined);
+    setForcedMode(undefined);
     buildUrl({ room: null, role: null, mode: null });
   };
-
-  // const isJoinLink = Boolean((urlParams.room || urlParams.role || urlParams.mode) && !sessionMatchesUrl);
 
   if (!sessionInfo) {
     return (
       <JoinScreen
-          onJoin={handleJoin}
-          defaultIdentity={''}
-          defaultRole={preservedRole ?? role}
-          defaultCameraOn={storedSession?.cameraOn ?? false}
-          forcedMode={forcedMode}
-        />
+        onJoin={handleJoin}
+        defaultIdentity={''}
+        defaultRole={preservedRole ?? role}
+        defaultCameraOn={storedSession?.cameraOn ?? false}
+        forcedMode={forcedMode}
+        defaultMode={forcedMode}  
+        forcedRole={preservedRole}
+      />
     );
   }
 
