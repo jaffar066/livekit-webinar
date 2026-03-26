@@ -108,7 +108,7 @@ function RoomContent({
 
 export function RoomView({ identity, room, role, mode, cameraOn, onLeave, tokenServerUrl }: RoomViewProps) {
     const tokenEndpoint =
-        tokenServerUrl ?? (import.meta.env.VITE_TOKEN_SERVER_URL as string) ?? 'http://localhost:3001/get-token';
+        tokenServerUrl ?? (import.meta.env.VITE_TOKEN_SERVER_URL as string) ?? 'http://localhost:3000/get-token';
 
     const [token, setToken] = useState<string | undefined>(undefined);
     const [serverUrl, setServerUrl] = useState<string>(
