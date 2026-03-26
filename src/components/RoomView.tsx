@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { LiveKitRoom, RoomAudioRenderer, useParticipants } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, useParticipants, useChat, useLocalParticipant } from '@livekit/components-react';
 import { RoomHeader } from './RoomHeader';
 import { RoomFooter } from './RoomFooter';
 import { type Role, type Mode } from './types';
 import OpentokLayout from './OpentokLayout';
+import ChatPanel from './ChatPanel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -31,11 +32,34 @@ function RoomContent({
 }) {
     const participants = useParticipants();
     const remoteCount = participants.filter((p) => !p.isLocal).length;
+    const [chatVisible, setChatVisible] = useState(false);
+    const { chatMessages } = useChat();
+    const { localParticipant } = useLocalParticipant();
+
+    const [lastSeenTimestamp, setLastSeenTimestamp] = useState<number>(Date.now());
+
+    // compute unread messages: those after lastSeenTimestamp and not from local
+    const unreadCount = chatMessages.filter(
+        (m) => m.timestamp > lastSeenTimestamp && m.from?.identity !== localParticipant?.identity
+    ).length;
+
+    // when chat is opened, mark all as seen
+    const handleToggleChat = () => {
+        setChatVisible((v) => {
+            const next = !v;
+            if (next) {
+                // mark seen at latest message timestamp
+                const latest = chatMessages.reduce((max, m) => Math.max(max, m.timestamp || 0), 0);
+                setLastSeenTimestamp(latest || Date.now());
+            }
+            return next;
+        });
+    };
 
     // All layout logic moved into `OpentokLayout` component.
 
     return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <RoomHeader
                 mode={mode}
                 role={role}
@@ -46,7 +70,8 @@ function RoomContent({
             {/* opentok-layout container */}
             <OpentokLayout participants={participants} role={role} />
 
-            <RoomFooter room={room} role={role} mode={mode} onLeave={onLeave} />
+            <RoomFooter room={room} role={role} mode={mode} onLeave={onLeave} onToggleChat={handleToggleChat} chatVisible={chatVisible} unreadCount={unreadCount} />
+            <ChatPanel visible={chatVisible} onClose={() => setChatVisible(false)} />
 
             <RoomAudioRenderer />
         </div>

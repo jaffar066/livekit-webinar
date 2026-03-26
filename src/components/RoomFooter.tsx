@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocalParticipant } from '@livekit/components-react';
-import { FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor, FiShare2, FiPower } from 'react-icons/fi';
+import { FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor, FiShare2, FiPower, FiMessageSquare } from 'react-icons/fi';
 import { type Mode, type Role } from './types';
 
 export type RoomFooterProps = {
@@ -8,6 +8,9 @@ export type RoomFooterProps = {
   role: Role;
   mode: Mode;
   onLeave: () => void;
+  onToggleChat?: () => void;
+  chatVisible?: boolean;
+  unreadCount?: number;
 };
 
 const buttonStyle: CSSProperties = {
@@ -18,7 +21,7 @@ const buttonStyle: CSSProperties = {
   cursor: 'pointer',
 };
 
-export function RoomFooter({ room, role, mode, onLeave }: RoomFooterProps) {
+export function RoomFooter({ room, role, mode, onLeave, onToggleChat, chatVisible, unreadCount = 0 }: RoomFooterProps) {
   const {
     localParticipant,
     isMicrophoneEnabled,
@@ -207,6 +210,57 @@ export function RoomFooter({ room, role, mode, onLeave }: RoomFooterProps) {
           flexWrap: 'wrap',
         }}
       >
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => onToggleChat?.()}
+            aria-pressed={Boolean(typeof onToggleChat !== 'undefined' ? chatVisible : false)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 8,
+              border: '1px solid rgba(0,0,0,0.2)',
+              background: chatVisible ? '#eef6ff' : '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <FiMessageSquare />
+            Chat
+          </button>
+          {unreadCount > 0 && !chatVisible && (
+            <div
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: '0',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  background: '#dc2626',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                  border: '2px solid rgba(0,0,0,0.6)',
+                }}
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </div>
+            </div>
+          )}
+        </div>
+
         <button
           type="button"
           onClick={onLeave}

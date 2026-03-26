@@ -26,7 +26,7 @@ export default function App() {
     };
   }, []);
 
-  // 1. Initial state from sessionStorage for Refresh persistence
+  // Initial state from sessionStorage for Refresh persistence
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(() => {
     const saved = window.sessionStorage.getItem(SS_KEY);
     if (saved) {
@@ -38,7 +38,6 @@ export default function App() {
     return null;
   });
 
-  // 2. Sync URL and storage
   useEffect(() => {
     const url = new URL(window.location.href);
     if (sessionInfo) {
@@ -47,7 +46,6 @@ export default function App() {
       url.searchParams.set('mode', sessionInfo.mode);
       window.sessionStorage.setItem(SS_KEY, JSON.stringify(sessionInfo));
     } else {
-      // Ensure a room exists in URL for the Join Card
       if (!url.searchParams.get('room')) {
         url.searchParams.set('room', Math.floor(100000 + Math.random() * 900000).toString());
       }
@@ -69,7 +67,6 @@ export default function App() {
     return (
       <JoinScreen
         onJoin={handleJoin}
-        // REMOVED defaultIdentity so the input field is always empty on a fresh paste
         defaultIdentity={''} 
         forcedMode={urlParams.mode ?? undefined}
         forcedRole={urlParams.role ?? undefined}
