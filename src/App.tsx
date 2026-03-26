@@ -73,14 +73,6 @@ const [forcedMode, setForcedMode] = useState<Mode | undefined>(
 
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(() => {
     if (urlParams.room || urlParams.role) {
-      // If we have a stored session that matches the URL params, restore it.
-      if (
-        storedSession &&
-        (!urlParams.room || storedSession.room === urlParams.room) &&
-        (!urlParams.role || storedSession.role === urlParams.role)
-      ) {
-        return storedSession;
-      }
       return null;
     }
     return storedSession;
