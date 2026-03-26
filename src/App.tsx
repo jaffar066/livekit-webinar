@@ -71,12 +71,19 @@ const [forcedMode, setForcedMode] = useState<Mode | undefined>(
     urlParams.role ?? undefined,
   );
 
-  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(() => {
-    if (urlParams.room || urlParams.role) {
-      return null;
+const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(() => {
+  if (storedSession) {
+    // Only restore session if URL params match (or aren't present)
+    const roomMatches = !urlParams.room || urlParams.room === storedSession.room;
+    const roleMatches = !urlParams.role || urlParams.role === storedSession.role;
+    const modeMatches = !urlParams.mode || urlParams.mode === storedSession.mode;
+    if (roomMatches && roleMatches && modeMatches) {
+      return storedSession; // ← stays in call on refresh
     }
-    return storedSession;
-  });
+    return null; // URL params conflict (e.g. someone shared a different room link)
+  }
+  return null;
+});
 
   const [role, setRole] = useState<Role>(storedSession?.role ?? initialRole);
 
