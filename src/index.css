@@ -115,3 +115,8 @@ code {
   color: white !important;
   border-radius: 6px !important;
 }
+
+video[data-lk-local-participant="false"] {
+  transform: scaleX(-1);
+  -webkit-transform: scaleX(-1);
+}

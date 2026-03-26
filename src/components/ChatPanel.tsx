@@ -1,138 +1,104 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChat, useLocalParticipant } from '@livekit/components-react';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiSmile, FiSend } from 'react-icons/fi';
 
-export default function ChatPanel({
-    visible,
-    onClose,
-}: {
-    visible: boolean;
-    onClose: () => void;
-}) {
-    const { chatMessages, send, isSending } = useChat();
-    const { localParticipant } = useLocalParticipant();
-    const [text, setText] = useState('');
-    const listRef = useRef<HTMLDivElement | null>(null);
+export default function ChatPanel({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { chatMessages, send, isSending } = useChat();
+  const { localParticipant } = useLocalParticipant();
+  const [text, setText] = useState('');
+  const [showEmojis, setShowEmojis] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
-    useEffect(() => {
-        if (listRef.current) {
-            listRef.current.scrollTop = listRef.current.scrollHeight;
-        }
-    }, [chatMessages]);
+  const EMOJIS = ['👋', '😊', '😂', '👍', '🔥', '❤️', '🌎', '🙌'];
 
-    const handleSend = async () => {
-        const trimmed = text.trim();
-        if (!trimmed) return;
-        try {
-            await send(trimmed);
-            setText('');
-        } catch (err) {
-            console.error('Failed to send chat message', err);
-        }
-    };
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [chatMessages]);
 
-    if (!visible) return null;
+  const handleSend = async () => {
+    if (!text.trim()) return;
+    await send(text.trim());
+    setText('');
+    setShowEmojis(false);
+  };
 
-    return (
-        <div
-            style={{
-                position: 'fixed',
-                inset: 0,
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'flex-end',
-                zIndex: 60,
-                pointerEvents: 'auto',
-            }}
-        >
-            <div
-                onClick={onClose}
-                style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }}
-            />
+  if (!visible) return null;
 
-            <aside
-                style={{
-                    width: 380,
-                    height: '60vh',
-                    margin: 32,
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    background: '#fff',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transform: 'translateY(0)',
-                    transition: 'transform 200ms ease',
-                }}
-                aria-modal
-                role="dialog"
-            >
-                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'linear-gradient(90deg,#0ea5e9,#7dd3fc)', color: '#fff' }}>
-                    <div style={{ fontWeight: 700 }}>Room Chat</div>
-                    <button onClick={onClose} aria-label="Close chat" style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
-                        <FiX />
-                    </button>
-                </header>
+  return (
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', zIndex: 100 }}>
+      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
 
-                <div ref={listRef} style={{ padding: 14, overflowY: 'auto', flex: 1, background: '#f7fafc' }}>
-                    {chatMessages.length === 0 && (
-                        <div style={{ color: 'rgba(0,0,0,0.45)', textAlign: 'center', marginTop: 24 }}>No messages yet — say hi 👋</div>
-                    )}
-                    {chatMessages.map((m) => {
-                        const isLocal = !!(m.from && localParticipant && m.from.identity === localParticipant.identity);
-                        const wrapperStyle: any = {
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: isLocal ? 'flex-end' : 'flex-start',
-                            marginBottom: 12,
-                        };
+      <aside style={{
+        width: 360, height: '550px', margin: 24, borderRadius: 16, overflow: 'hidden',
+        background: '#fff', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', position: 'relative'
+      }}>
+        <header style={{ padding: '16px', background: '#0ea5e9', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 700 }}>Room Chat</span>
+          <FiX onClick={onClose} style={{ cursor: 'pointer' }} />
+        </header>
 
-                        const nameStyle: any = {
-                            fontSize: 12,
-                            color: isLocal ? '#0369a1' : '#6b7280',
-                            marginBottom: 6,
-                        };
-
-                        const bubbleStyle: any = {
-                            display: 'inline-block',
-                            background: isLocal ? '#e0f2fe' : '#fff',
-                            padding: '10px 14px',
-                            borderRadius: 14,
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                            maxWidth: '80%',
-                            textAlign: 'left',
-                        };
-
-                        return (
-                            <div key={m.id} style={wrapperStyle}>
-                                <div style={nameStyle}>
-                                    <strong>{m.from?.identity ?? 'System'}</strong>
-                                    <span style={{ marginLeft: 8, fontSize: 11, color: 'rgba(0,0,0,0.35)' }}>{new Date(m.timestamp).toLocaleTimeString()}</span>
-                                </div>
-                                <div style={bubbleStyle}>{m.message}</div>
-                            </div>
-                        );
-                    })}
+        <div ref={listRef} style={{ flex: 1, padding: 16, overflowY: 'auto', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {chatMessages.length === 0 && (
+            <div style={{ color: '#94a3b8', textAlign: 'center', marginTop: 20, fontSize: 13 }}>No messages yet...</div>
+          )}
+          
+          {chatMessages.map((m) => {
+            const isLocal = m.from?.identity === localParticipant?.identity;
+            return (
+              <div key={m.id} style={{ alignSelf: isLocal ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, textAlign: isLocal ? 'right' : 'left' }}>
+                  {isLocal ? 'You' : m.from?.identity} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
-
-                <div style={{ padding: 12, borderTop: '1px solid #eee', display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSend();
-                            }
-                        }}
-                        placeholder="Write a message..."
-                        style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid #e6edf3' }}
-                    />
-                    <button onClick={handleSend} disabled={isSending || !text.trim()} style={{ padding: '10px 14px', borderRadius: 10, background: '#0ea5e9', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                        Send
-                    </button>
+                <div style={{
+                  padding: '10px 14px', borderRadius: '14px', fontSize: 14,
+                  // LOCAL = BLUE | REMOTE = RED
+                  background: isLocal ? '#0ea5e9' : '#dc2626', 
+                  color: '#fff', 
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                  border: 'none'
+                }}>
+                  {m.message}
                 </div>
-            </aside>
+              </div>
+            );
+          })}
         </div>
-    );
+
+        {/* Quick Emoji Bar */}
+        {showEmojis && (
+          <div style={{ display: 'flex', gap: 10, padding: '8px 12px', background: '#fff', borderTop: '1px solid #f1f5f9', justifyContent: 'center' }}>
+            {EMOJIS.map(e => (
+              <button key={e} onClick={() => setText(prev => prev + e)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>{e}</button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ padding: 12, borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, alignItems: 'center', background: '#fff' }}>
+          <button onClick={() => setShowEmojis(!showEmojis)} style={{ background: 'none', border: 'none', color: showEmojis ? '#0ea5e9' : '#64748b', cursor: 'pointer', display: 'flex' }}>
+            <FiSmile size={20} />
+          </button>
+          
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Type message..."
+            style={{ flex: 1, padding: '10px 14px', borderRadius: 20, border: '1px solid #e2e8f0', outline: 'none', fontSize: 14 }}
+          />
+
+          <button 
+            onClick={handleSend}
+            disabled={!text.trim() || isSending}
+            style={{ 
+              background: text.trim() ? '#0ea5e9' : '#cbd5e1', color: '#fff', border: 'none', 
+              width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', 
+              justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s'
+            }}
+          >
+            <FiSend size={16} />
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
 }
