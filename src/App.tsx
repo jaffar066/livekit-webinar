@@ -45,8 +45,7 @@ export default function App() {
     return { room, role, mode };
   }, []);
 
-  // Hum sessionStorage use kar rahe hain taake refresh par data rahe, 
-  // lekin naye tab ya link paste par naya session start ho.
+
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(() => {
     if (typeof window === 'undefined') return null;
     const raw = window.sessionStorage.getItem('livekit-session');
@@ -54,7 +53,6 @@ export default function App() {
     
     try {
       const stored = JSON.parse(raw) as SessionInfo;
-      // Refresh check: Agar URL ka room aur stored room match hain, tabhi auto-join
       if (urlParams.room && stored.room === urlParams.room) {
         return stored;
       }
@@ -79,8 +77,6 @@ export default function App() {
   }) => {
     const room = urlParams.room ?? randomRoomId();
     const newSession: SessionInfo = { identity, room, role: requestedRole, mode, cameraOn };
-    
-    // Yahan sessionStorage set ho raha hai
     window.sessionStorage.setItem('livekit-session', JSON.stringify(newSession));
     setSessionInfo(newSession);
     setRole(requestedRole);
@@ -98,7 +94,6 @@ export default function App() {
       <JoinScreen
         onJoin={handleJoin}
         defaultIdentity={''}
-        // URL se role uthayega agar link mein hai, warna host
         defaultRole={urlParams.role ?? 'host'}
         defaultCameraOn={false}
         forcedMode={urlParams.mode ?? undefined}
