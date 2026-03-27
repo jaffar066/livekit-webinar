@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LiveKitRoom, RoomAudioRenderer, useParticipants, useChat,
  useLocalParticipant } from '@livekit/components-react';
+import { Track } from 'livekit-client';
 import { RoomHeader } from './RoomHeader';
 import { RoomFooter } from './RoomFooter';
 import { type Role, type Mode } from './types';
@@ -26,12 +27,14 @@ function RoomContent({ room, role, mode, onLeave }: any) {
     if (!chatVisible) setLastSeen(chatMessages.reduce((max, m) => Math.max(max, m.timestamp), 0) || Date.now());
   };
 
+  const otherIsSharing = participants.some(p => !p.isLocal && !!p.getTrackPublication?.(Track.Source.ScreenShare));
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000' }}>
       <RoomHeader mode={mode} role={role} participants={participants.length} remoteCount={participants.filter(p => !p.isLocal).length} />
       <OpentokLayout participants={participants} role={role} />
         <RoomFooter room={room} role={role} mode={mode} onLeave={onLeave} onToggleChat={toggleChat}
-        chatVisible={chatVisible} unreadCount={unreadCount} />
+        chatVisible={chatVisible} unreadCount={unreadCount} otherIsSharing={otherIsSharing} />
       <ChatPanel visible={chatVisible} onClose={() => setChatVisible(false)} />
       <RoomAudioRenderer />
     </div>

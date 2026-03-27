@@ -11,6 +11,7 @@ export type RoomFooterProps = {
   onToggleChat?: () => void;
   chatVisible?: boolean;
   unreadCount?: number;
+  otherIsSharing?: boolean;
 };
 
 const buttonStyle: CSSProperties = {
@@ -21,7 +22,7 @@ const buttonStyle: CSSProperties = {
   cursor: 'pointer',
 };
 
-export function RoomFooter({ room, role, mode, onLeave, onToggleChat, chatVisible, unreadCount = 0 }: RoomFooterProps) {
+export function RoomFooter({ room, role, mode, onLeave, onToggleChat, chatVisible, unreadCount = 0, otherIsSharing = false }: RoomFooterProps) {
   const {
     localParticipant,
     isMicrophoneEnabled,
@@ -184,7 +185,13 @@ export function RoomFooter({ room, role, mode, onLeave, onToggleChat, chatVisibl
             <button
               type="button"
               onClick={toggleScreenShare}
-              style={buttonStyle}
+              style={{
+                ...buttonStyle,
+                opacity: otherIsSharing && !isScreenShareEnabled ? 0.6 : 1,
+                cursor: otherIsSharing && !isScreenShareEnabled ? 'not-allowed' : buttonStyle.cursor,
+              }}
+              disabled={otherIsSharing && !isScreenShareEnabled}
+              title={otherIsSharing && !isScreenShareEnabled ? 'Someone else is sharing' : undefined}
             >
               {isScreenShareEnabled ? (
                 <>

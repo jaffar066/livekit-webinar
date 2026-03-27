@@ -23,12 +23,13 @@ export default function OpentokLayout({ participants, role }: { participants: an
 
     const tiles = useMemo(() => {
         return participants.flatMap((p) => {
-            if (p.isLocal && role === 'viewer') return [];
-
             const cameraPub = p.getTrackPublication(Track.Source.Camera);
             const screenPub = p.getTrackPublication(Track.Source.ScreenShare);
+            const micPub = p.getTrackPublication(Track.Source.Microphone);
+            const isViewer = !cameraPub && !screenPub && !micPub;
+            if (isViewer && !p.isLocal) return [];
+            if (p.isLocal && role === 'viewer') return [];
             const items = [];
-
             if (screenPub && screenPub.isSubscribed) {
                 items.push({
                     id: `${p.identity}-screen`,
@@ -38,15 +39,13 @@ export default function OpentokLayout({ participants, role }: { participants: an
                     isBig: true,
                 });
             }
-
             items.push({
                 id: `${p.identity}-camera`,
                 participant: p,
                 source: Track.Source.Camera,
-                publication: cameraPub, 
+                publication: cameraPub,
                 isBig: false,
             });
-
             return items;
         });
     }, [participants, role]);
