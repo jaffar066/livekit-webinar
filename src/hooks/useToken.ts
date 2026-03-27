@@ -9,7 +9,7 @@ export type Role = 'host' | 'cohost' | 'viewer';
  * The token server should return JSON in the shape: { participant_token, server_url, role }.
  */
 export function useTokenSource(tokenServerUrl?: string, onRole?: (role: Role) => void) {
-  const baseUrl = tokenServerUrl ?? (import.meta.env.VITE_TOKEN_SERVER_URL as string) ?? 'http://localhost:3001/get-token';
+  const baseUrl = tokenServerUrl ?? (import.meta.env.VITE_TOKEN_SERVER_URL as string) ?? 'http://localhost:3000/get-token';
 
   return useMemo(() => {
     return TokenSource.custom(async (opts) => {

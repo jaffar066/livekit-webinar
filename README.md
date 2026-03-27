@@ -1,11 +1,41 @@
-# LiveKit Webinar (backend + frontend)
+LiveKit Webinar — Simple self-hosted quick start
 
-This workspace contains a minimal **LiveKit webinar demo** with:
+What this is
+- A tiny demo that shows video calls (camera + screen share) using LiveKit.
+- There are three parts you run on your computer:
+  1. LiveKit server (handles video/audio traffic)
+  2. Token server (a small backend that gives the frontend a temporary login token)
+  3. Frontend (the web page you open in your browser)
 
-- `backend/` — a token server that mints LiveKit tokens (host/cohost/viewer)
-- `webinar-fe/` — a simple React + Vite frontend that connects to the backend
+Goal
+- Get a working call with two or more browser windows in a few commands. No deep technical knowledge required.
 
-## Run the backend
+Summary (one-line steps)
+1) Start LiveKit server (Docker)  2) Start token server (backend)  3) Start the frontend and open it in your browser
+
+Step-by-step (the simplest way)
+
+1) Start LiveKit server (run this in a terminal)
+
+This runs the LiveKit service that moves video/audio between participants.
+
+```bash
+docker run --rm -it \
+  -p 7880:7880 \
+  -p 7881:7881 \
+  -e LIVEKIT_KEYS="devkey:secret" \
+  -e LIVEKIT_API_KEY=devkey \
+  -e LIVEKIT_API_SECRET=secret \
+  livekit/livekit-server:latest --dev
+```
+
+What it does for you: exposes a local address `ws://localhost:7880` that other parts can use to connect.
+
+If you cannot use Docker, you can download a LiveKit binary from the official docs and run `./livekit-server --dev` instead.
+
+2) Start the token server (this demo's backend)
+
+Why: the frontend needs a short-lived token to join a room. The token server mints that token for you.
 
 ```bash
 cd backend
@@ -13,9 +43,18 @@ npm install
 npm run dev
 ```
 
-The backend listens on `http://localhost:3001` and exposes `/get-token`.
+After this, the token server usually listens at `http://localhost:3001` and has a simple endpoint `/get-token`.
 
-## Run the frontend
+3) Start the frontend (open the web app)
+
+Create a file `webinar-fe/.env` with these two lines (these tell the web app where to find the LiveKit server and the token server):
+
+```
+VITE_LIVEKIT_URL=ws://localhost:7880
+VITE_TOKEN_SERVER_URL=http://localhost:3001/get-token
+```
+
+Then run:
 
 ```bash
 cd webinar-fe
@@ -23,71 +62,33 @@ npm install
 npm run dev
 ```
 
-The frontend reads `VITE_TOKEN_SERVER_URL` from `webinar-fe/.env` (defaults to `http://localhost:3001/get-token`).
+Open the URL shown by the `npm run dev` output (usually `http://localhost:5173`) in two or more browser windows or tabs.
 
+How to join a call
+- In each browser window, enter the same room name and a different name for yourself (for example `alice`, `bob`).
+- Click Join — the frontend asks the token server for a token, then connects to the LiveKit server.
+- Allow camera/microphone permission when the browser asks.
 
-## What is LiveKit and why do I need it?
+If you want screen share
+- Use the Share screen button in the UI; other participants will see your shared screen.
 
-LiveKit is an open source WebRTC SFU (Selective Forwarding Unit) for real-time audio/video. This demo requires a running LiveKit server to handle media streams and room state. You can run it locally for development, or deploy it to a remote server for production.
+Very short troubleshooting (plain words)
+- If you see no video: make sure the LiveKit server is running (step 1) and the token server is running (step 2).
+- If the page says it can't get a token: check `VITE_TOKEN_SERVER_URL` in `webinar-fe/.env` and that the backend is running on that address.
+- If screens or people are hidden during screen-share: open the browser DevTools Console to check that the app shows all participants (the app prints participant names when they change).
 
-## Run a LiveKit server locally
-
-You need a running LiveKit server for this demo. The easiest way is using Docker:
-
-### Using Docker
-
-```bash
-docker run --rm -it \
-	-p 7880:7880 \
-	-p 7881:7881 \
-	-e LIVEKIT_KEYS="devkey:secret" \
-	-e LIVEKIT_API_KEY=devkey \
-	-e LIVEKIT_API_SECRET=secret \
-	livekit/livekit-server:latest --dev
-```
-
-### Using a binary
-
-Download the latest release from: https://docs.livekit.io/deploy/server/
+Optional: mint a token by hand
+- For testing you can request a token directly from the token server:
 
 ```bash
-./livekit-server --dev
+curl "http://localhost:3001/get-token?room=demo&identity=alice"
 ```
 
-The server will listen on `ws://localhost:7880` (WebSocket) and `http://localhost:7881` (HTTP API) by default.
+That returns a token string you could paste into a custom client.
 
-## Example .env for the frontend
+Notes
+- This setup is for local development and demos. For a public production setup you would run LiveKit on a server, use HTTPS/WSS, and secure your token endpoint.
+- If you want, I can add a tiny ready-to-run token server script in `backend/` so a non-technical user can start the backend with a single command.
 
-Create a file `webinar-fe/.env`:
-
-```
-VITE_TOKEN_SERVER_URL=http://localhost:3001/get-token
-VITE_LIVEKIT_URL=ws://localhost:7880
-```
-
-## Running LiveKit on a remote server
-
-1. Follow the official docs: https://docs.livekit.io/deploy/server/
-2. Make sure to expose ports **7880** (WebSocket) and **7881** (HTTP API) to the public internet.
-3. Set your `VITE_LIVEKIT_URL` and backend token server to point to your remote server in your `.env`:
-	 ```
-	 VITE_LIVEKIT_URL=wss://your-server:7880
-	 VITE_TOKEN_SERVER_URL=https://your-backend/get-token
-	 ```
-4. Update CORS and firewall rules as needed.
-
-## Troubleshooting
-
-- If you see connection errors, check that your LiveKit server is running and accessible at the URL in your `.env`.
-- If you see blank video or no video element, make sure your browser has camera permissions and the LiveKit server is reachable.
-- For production, use secure WebSocket (`wss://`) and HTTPS for your backend.
-
-## Notes
-
-- The frontend is intentionally minimal and keeps the UI simple.
-- This setup is for development/demo purposes only; do not expose dev credentials in production.
-
-## Notes
-
-- The frontend is intentionally minimal and keeps the UI simple.
-- This setup is for development/demo purposes only; do not expose dev credentials in production.
+---
+If you'd like the README even shorter (one-page quick cheat sheet for a non-technical person), tell me and I will compress it into a printable checklist.

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { ParticipantTile } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { FiMic } from 'react-icons/fi';
