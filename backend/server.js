@@ -64,11 +64,11 @@ const createTokenResponse = async (req, res) => {
     roomHostById.set(room, identity);
   }
 
-  const canPublish = role === 'host' || role === 'cohost';
+  // const canPublish = role === 'host' || role === 'cohost';
   const grant = {
     room,
     roomJoin: true,
-    canPublish,
+    canPublish: true, 
     canSubscribe: true,
     participantAttributes: { role },
   };

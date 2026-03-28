@@ -1,11 +1,12 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { ParticipantTile } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import { FiMic } from 'react-icons/fi';
+import { FiMic, FiMaximize, FiMinimize } from 'react-icons/fi';
 
 export default function OpentokLayout({ participants, role }: { participants: any[]; role: any }) {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const layoutFnRef = useRef<(() => void) | null>(null);
+    const [maximizedTileId, setMaximizedTileId] = useState<string | null>(null);
 
     useEffect(() => {
         let layout: any;
@@ -28,7 +29,7 @@ export default function OpentokLayout({ participants, role }: { participants: an
         };
         window.addEventListener('resize', handleResize);
         return () => {
-        window.removeEventListener('resize', handleResize);
+            window.removeEventListener('resize', handleResize);
         };
     }, []);
 
@@ -75,53 +76,72 @@ export default function OpentokLayout({ participants, role }: { participants: an
             ref={containerRef}
             style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#111', padding: 10 }}
         >
-            {/* Prevent mirrored transform for screen-share videos (override scaleX(-1)) */}
-            <style>{`.no-mirror video, .no-mirror iframe, .no-mirror img { transform: none !important; -webkit-transform: none !important; }`}</style>
-            {tiles.map((tile) => (
-                <div
-                    key={tile.id}
-                    className={`${tile.isBig ? 'OT_big' : ''} ${tile.source === Track.Source.ScreenShare ? 'no-mirror' : ''}`.trim()}
-                    style={{ position: 'absolute', padding: 4, boxSizing: 'border-box' }}
-                >
-                    <div style={{
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: 12,
-                        overflow: 'hidden',
-                        background: '#1a1a1a',
-                        position: 'relative',
-                        // Red border/outline sirf Camera tile ke liye jab banda bole
-                        outline: (tile.participant.isSpeaking && tile.source === Track.Source.Camera)
-                            ? '2px solid #e91b1b'
-                            : '1px solid #333',
-                        boxShadow: (tile.participant.isSpeaking && tile.source === Track.Source.Camera)
-                            ? '0 0 15px rgba(233, 27, 27, 0.4)'
-                            : 'none'
-                    }}>
 
-                        {/* Mic Icon sirf Camera tile par */}
-                        {tile.participant.isSpeaking && tile.source === Track.Source.Camera && (
-                            <div style={{
-                                position: 'absolute', top: 12, right: 12, zIndex: 100,
-                                background: '#e91b1b', color: '#fff', width: 26, height: 26,
-                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
-                            }}>
-                                <FiMic size={14} />
-                            </div>
-                        )}
+            {tiles.map((tile) => {
+                const isMaximized = maximizedTileId === tile.id;
 
-                        <ParticipantTile
-                            trackRef={{
-                                participant: tile.participant,
-                                source: tile.source,
-                                publication: tile.publication
-                            }}
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                return (
+                    <div
+                        key={tile.id}
+                        className={`
+                            ${tile.isBig ? 'OT_big' : ''} 
+                            ${tile.source === Track.Source.ScreenShare ? 'no-mirror' : ''}
+                            ${isMaximized ? 'maximized-tile' : ''}
+                        `.trim()}
+                        style={{ position: 'absolute', padding: 4, boxSizing: 'border-box', transition: 'all 0.3s ease' }}
+                    >
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: isMaximized ? 0 : 12,
+                            overflow: 'hidden',
+                            background: '#1a1a1a',
+                            position: 'relative',
+                            outline: (tile.participant.isSpeaking && tile.source === Track.Source.Camera)
+                                ? '2px solid #e91b1b'
+                                : '1px solid #333',
+                        }}>
+
+                            {/* Mic Icon */}
+                            {tile.participant.isSpeaking && tile.source === Track.Source.Camera && (
+                                <div style={{
+                                    position: 'absolute', top: 12, right: 12, zIndex: 100,
+                                    background: '#e91b1b', color: '#fff', width: 26, height: 26,
+                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                    <FiMic size={14} />
+                                </div>
+                            )}
+
+                            {/* Maximize/Minimize Button - Only for Screen Share */}
+                            {tile.source === Track.Source.ScreenShare && (
+                                <button
+                                    onClick={() => setMaximizedTileId(isMaximized ? null : tile.id)}
+                                    style={{
+                                        position: 'absolute', bottom: 12, right: 12, zIndex: 110,
+                                        background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none',
+                                        width: 32, height: 32, borderRadius: '6px', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        backdropFilter: 'blur(4px)'
+                                    }}
+                                    title={isMaximized ? "Minimize" : "Maximize"}
+                                >
+                                    {isMaximized ? <FiMinimize size={18} /> : <FiMaximize size={18} />}
+                                </button>
+                            )}
+
+                            <ParticipantTile
+                                trackRef={{
+                                    participant: tile.participant,
+                                    source: tile.source,
+                                    publication: tile.publication
+                                }}
+                                style={{ width: '100%', height: '100%' }}
+                            />
+                        </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
         </main>
     );
 }
