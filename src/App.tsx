@@ -83,7 +83,7 @@ export default function App() {
     buildUrl(newSession);
   };
 
-  // Clear session on page unload
+
   const handleLeave = () => {
     window.sessionStorage.removeItem('livekit-session');
     setSessionInfo(null);
