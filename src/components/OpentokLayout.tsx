@@ -8,17 +8,28 @@ export default function OpentokLayout({ participants, role }: { participants: an
     const layoutFnRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
+        let layout: any;
         import('opentok-layout-js').then((mod) => {
             const init = (mod as any).default ?? mod;
-            const { layout } = init(containerRef.current, { 
-                maxRatio: 3/2, 
-                minRatio: 9/16, 
-                bigClass: 'OT_big', 
-                bigPercentage: 0.8 
+            const instance = init(containerRef.current, {
+                maxRatio: 3 / 2,
+                minRatio: 9 / 16,
+                bigClass: 'OT_big',
+                bigPercentage: 0.8
             });
+            layout = instance.layout;
             layoutFnRef.current = layout;
             layout();
         });
+        const handleResize = () => {
+            if (layoutFnRef.current) {
+                layoutFnRef.current();
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+        window.removeEventListener('resize', handleResize);
+        };
     }, []);
 
     const tiles = useMemo(() => {
@@ -54,45 +65,45 @@ export default function OpentokLayout({ participants, role }: { participants: an
         if (layoutFnRef.current) {
             const timeout = setTimeout(() => {
                 layoutFnRef.current?.();
-            }, 50); 
+            }, 50);
             return () => clearTimeout(timeout);
         }
     }, [tiles]);
 
     return (
-        <main 
-            ref={containerRef} 
+        <main
+            ref={containerRef}
             style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#111', padding: 10 }}
         >
             {/* Prevent mirrored transform for screen-share videos (override scaleX(-1)) */}
             <style>{`.no-mirror video, .no-mirror iframe, .no-mirror img { transform: none !important; -webkit-transform: none !important; }`}</style>
             {tiles.map((tile) => (
-                <div 
-                    key={tile.id} 
-                    className={`${tile.isBig ? 'OT_big' : ''} ${tile.source === Track.Source.ScreenShare ? 'no-mirror' : ''}`.trim()} 
+                <div
+                    key={tile.id}
+                    className={`${tile.isBig ? 'OT_big' : ''} ${tile.source === Track.Source.ScreenShare ? 'no-mirror' : ''}`.trim()}
                     style={{ position: 'absolute', padding: 4, boxSizing: 'border-box' }}
                 >
                     <div style={{
-                        width: '100%', 
-                        height: '100%', 
-                        borderRadius: 12, 
-                        overflow: 'hidden', 
-                        background: '#1a1a1a', 
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        background: '#1a1a1a',
                         position: 'relative',
                         // Red border/outline sirf Camera tile ke liye jab banda bole
-                        outline: (tile.participant.isSpeaking && tile.source === Track.Source.Camera) 
-                            ? '2px solid #e91b1b' 
+                        outline: (tile.participant.isSpeaking && tile.source === Track.Source.Camera)
+                            ? '2px solid #e91b1b'
                             : '1px solid #333',
-                        boxShadow: (tile.participant.isSpeaking && tile.source === Track.Source.Camera) 
-                            ? '0 0 15px rgba(233, 27, 27, 0.4)' 
+                        boxShadow: (tile.participant.isSpeaking && tile.source === Track.Source.Camera)
+                            ? '0 0 15px rgba(233, 27, 27, 0.4)'
                             : 'none'
                     }}>
-                        
+
                         {/* Mic Icon sirf Camera tile par */}
                         {tile.participant.isSpeaking && tile.source === Track.Source.Camera && (
                             <div style={{
                                 position: 'absolute', top: 12, right: 12, zIndex: 100,
-                                background: '#e91b1b', color: '#fff', width: 26, height: 26, 
+                                background: '#e91b1b', color: '#fff', width: 26, height: 26,
                                 borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
                             }}>
@@ -100,13 +111,13 @@ export default function OpentokLayout({ participants, role }: { participants: an
                             </div>
                         )}
 
-                        <ParticipantTile 
-                            trackRef={{ 
-                                participant: tile.participant, 
+                        <ParticipantTile
+                            trackRef={{
+                                participant: tile.participant,
                                 source: tile.source,
-                                publication: tile.publication 
-                            }} 
-                            style={{ width: '100%', height: '100%' }} 
+                                publication: tile.publication
+                            }}
+                            style={{ width: '100%', height: '100%' }}
                         />
                     </div>
                 </div>
