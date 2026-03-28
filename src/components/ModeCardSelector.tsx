@@ -61,57 +61,42 @@ export function ModeCardSelector({
   onJoin,
 }: ModeCardSelectorProps) {
   const [selectedMode, setSelectedMode] = useState<Mode | undefined>(forcedMode ?? undefined);
-  const [cameraOnState, setCameraOnState] = useState<Record<Mode, boolean>>(() => ({
+  const [cameraOnState, setCameraOnState] = useState<Record<Mode, boolean>>({
     live: defaultCameraOn,
     webinar: defaultCameraOn,
     conference: defaultCameraOn,
-  }));
+  });
   const [nameState, setNameState] = useState<Record<Mode, string>>({
     live: '',
     webinar: '',
     conference: '',
   });
 
-  const videoRefs = useRef<Record<Mode, HTMLVideoElement | null>>({
-    live: null,
-    webinar: null,
-    conference: null,
-  });
-  const streamRefs = useRef<Record<Mode, MediaStream | null>>({
-    live: null,
-    webinar: null,
-    conference: null,
-  });
-  const isFirstRender = useRef(true);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const streamRefs = useRef<Record<string, MediaStream | null>>({});
+
+  // 1. CRITICAL: Stop all camera tracks when component unmounts (e.g. after onJoin)
+  useEffect(() => {
+    return () => {
+      Object.values(streamRefs.current).forEach((stream) => {
+        stream?.getTracks().forEach((track) => track.stop());
+      });
+    };
+  }, []);
 
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
     if (selectedMode) {
-      onChange?.({ mode: selectedMode, cameraOn: cameraOnState[selectedMode], name: nameState[selectedMode] });
+      onChange?.({ 
+        mode: selectedMode, 
+        cameraOn: cameraOnState[selectedMode], 
+        name: nameState[selectedMode] 
+      });
     }
   }, [selectedMode, cameraOnState, nameState, onChange]);
 
-  const startCamera = (mode: Mode) => {
-    navigator.mediaDevices
-      .getUserMedia({ video: true })
-      .then((stream) => {
-        if (streamRefs.current[mode]) {
-          streamRefs.current[mode]!.getTracks().forEach((t) => t.stop());
-        }
-        streamRefs.current[mode] = stream;
-        if (videoRefs.current[mode]) {
-          videoRefs.current[mode]!.srcObject = stream;
-          videoRefs.current[mode]!.play().catch(() => {});
-        }
-      })
-      .catch(() => {
-        setCameraOnState((prev) => ({ ...prev, [mode]: false }));
-      });
-  };
-
   const stopCamera = (mode: Mode) => {
     if (streamRefs.current[mode]) {
-      streamRefs.current[mode]!.getTracks().forEach((t) => t.stop());
+      streamRefs.current[mode]?.getTracks().forEach((t) => t.stop());
       streamRefs.current[mode] = null;
     }
     if (videoRefs.current[mode]) {
@@ -119,16 +104,41 @@ export function ModeCardSelector({
     }
   };
 
+  const startCamera = async (mode: Mode) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stopCamera(mode);
+      streamRefs.current[mode] = stream;
+      if (videoRefs.current[mode]) {
+        videoRefs.current[mode]!.srcObject = stream;
+        videoRefs.current[mode]!.play().catch(() => {});
+      }
+    } catch (err) {
+      setCameraOnState((prev) => ({ ...prev, [mode]: false }));
+    }
+  };
+
   const handleCameraToggle = (mode: Mode, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newVal = !cameraOnState[mode];
-    setCameraOnState((prev) => ({ ...prev, [mode]: newVal }));
-    if (newVal) startCamera(mode);
+    const isTurningOn = !cameraOnState[mode];
+    setCameraOnState((prev) => ({ ...prev, [mode]: isTurningOn }));
+    
+    if (isTurningOn) startCamera(mode);
     else stopCamera(mode);
+  };
+
+  const handleModeSelect = (mode: Mode) => {
+    if (forcedMode) return;
+    if (selectedMode && selectedMode !== mode) {
+      stopCamera(selectedMode);
+      setCameraOnState(prev => ({ ...prev, [selectedMode]: false }));
+    }    
+    setSelectedMode(mode);
   };
 
   const handleJoin = (mode: Mode, e: React.MouseEvent) => {
     e.stopPropagation();
+    stopCamera(mode); 
     onJoin?.({ mode, cameraOn: cameraOnState[mode], name: nameState[mode] });
   };
 
@@ -145,9 +155,6 @@ export function ModeCardSelector({
         {modes.map((cardMode) => {
           const config = MODE_CONFIG[cardMode];
           const isSelected = selectedMode === cardMode;
-          const isLive = cardMode === 'live';
-          const isWebinar = cardMode === 'webinar';
-          const isConference = cardMode === 'conference';
           const cameraOn = cameraOnState[cardMode];
           const name = nameState[cardMode];
           const hasName = name.trim().length > 0;
@@ -160,22 +167,19 @@ export function ModeCardSelector({
                 '--card-accent': config.accent,
                 '--card-glow': config.glow,
                 '--card-accent-light': config.accent + '18',
+                maxWidth: forcedMode ? '500px' : '345px',
+                flex: forcedMode ? '0 1 500px' : '1 1 300px'
               } as React.CSSProperties}
-              onClick={() => { if (!forcedMode) setSelectedMode(cardMode); }}
+              onClick={() => handleModeSelect(cardMode)}
             >
-              {/* Top accent bar */}
               <div className="mcs-accent-bar" />
 
-              {/* Header row */}
               <div className="mcs-card-header">
-                <div className="mcs-icon-badge">
-                  {config.icon}
-                </div>
+                <div className="mcs-icon-badge">{config.icon}</div>
                 <div className="mcs-title-group">
                   <div className="mcs-card-title">{config.title}</div>
                   <div className="mcs-card-desc">{config.description}</div>
                 </div>
-                {/* Camera toggle */}
                 <div
                   className={`mcs-toggle-track${cameraOn ? ' mcs-toggle-track--on' : ''}`}
                   onClick={(e) => handleCameraToggle(cardMode, e)}
@@ -184,13 +188,11 @@ export function ModeCardSelector({
                 </div>
               </div>
 
-              {/* Camera status label */}
               <div className={`mcs-cam-label${cameraOn ? ' mcs-cam-label--on' : ''}`}>
                 <div className="mcs-cam-dot" />
                 {cameraOn ? 'Camera on' : 'Camera off'}
               </div>
 
-              {/* Preview area */}
               <div className="mcs-preview-box">
                 <video
                   ref={(el) => { videoRefs.current[cardMode] = el; }}
@@ -211,18 +213,11 @@ export function ModeCardSelector({
                     </span>
                   </div>
                 )}
-                {isSelected && isLive && (
-                  <div className="mcs-selected-pill">● Live</div>
-                )}
-                {isSelected && isConference && (
-                  <div className="mcs-selected-pill">● Conference</div>
-                )}
-                {isSelected && isWebinar && (
-                  <div className="mcs-selected-pill">● Webinar</div>
+                {isSelected && (
+                  <div className="mcs-selected-pill">● {config.title}</div>
                 )}
               </div>
 
-              {/* Name input */}
               <div className="mcs-input-group" onClick={(e) => e.stopPropagation()}>
                 <label className="mcs-input-label">Your name</label>
                 <input
@@ -233,7 +228,6 @@ export function ModeCardSelector({
                 />
               </div>
 
-              {/* Join button */}
               <button
                 className={`mcs-join-btn${hasName ? ' mcs-join-btn--active' : ''}`}
                 onClick={(e) => handleJoin(cardMode, e)}
