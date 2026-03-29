@@ -68,6 +68,18 @@ body {
   overflow: hidden;
 }
 
+@media (max-width: 1024px) {
+  body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .join-screen {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 h1,
 h2 {
   font-family: var(--heading);

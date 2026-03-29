@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocalParticipant } from '@livekit/components-react';
-import { FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor, FiShare2, FiPower, FiMessageSquare, FiMoreHorizontal, FiX } from 'react-icons/fi';
+import { FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor, FiPower, FiMessageSquare, FiMoreHorizontal, FiX } from 'react-icons/fi';
 import { type Mode, type Role } from './types';
 
 export type RoomFooterProps = {
