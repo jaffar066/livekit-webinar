@@ -33,7 +33,7 @@ function RoomContent({ room, role, mode, onLeave }: any) {
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000' }}>
       <RoomHeader mode={mode} role={role} participants={participants.length} remoteCount={participants.filter(p => !p.isLocal).length} />
       <OpentokLayout participants={participants} role={role} />
-        <RoomFooter room={room} role={role} mode={mode} onLeave={onLeave} onToggleChat={toggleChat}
+        <RoomFooter  roomName={room} role={role} mode={mode} onLeave={onLeave} onToggleChat={toggleChat}
         chatVisible={chatVisible} unreadCount={unreadCount} otherIsSharing={otherIsSharing} />
       <ChatPanel visible={chatVisible} onClose={() => setChatVisible(false)} />
       <RoomAudioRenderer />
