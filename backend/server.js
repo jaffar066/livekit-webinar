@@ -1,19 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken, EgressClient } from 'livekit-server-sdk';
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT);
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-  })
-);
+app.use(cors({
+   origin: [ 'http://localhost:5173', process.env.CORS_ORIGIN ].filter(Boolean),
+   methods: ['GET', 'POST', 'OPTIONS'],
+   allowedHeaders: ['Content-Type', 'Authorization'],
+   credentials: true,
+}));
+app.options('*', cors());
 app.use(express.json());
 
 const LIVEKIT_URL = process.env.LIVEKIT_URL || 'ws://localhost:7880';
@@ -25,6 +26,48 @@ if (!process.env.LIVEKIT_URL || !process.env.LIVEKIT_API_KEY || !process.env.LIV
     'Using default LiveKit credentials. For production, set LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET in backend/.env'
   );
 }
+
+// Create a single EgressClient instance to reuse across requests
+const egressClient = new EgressClient(
+  LIVEKIT_URL.replace('ws', 'http'),
+  LIVEKIT_API_KEY,
+  LIVEKIT_API_SECRET
+);
+
+// Endpoint to start recording a room
+app.post('/start-recording', async (req, res) => {
+  try {
+    const { room } = req.body;
+    if (!room) return res.status(400).json({ error: 'Room is required' });
+    const filepath = `/out/${room}-${Date.now()}.mp4`;
+    const response = await egressClient.startRoomCompositeEgress(room, {
+      file: { filepath },
+    });
+    res.json({
+      success: true,
+      egressId: response.egressId,
+      filepath,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to start recording' });
+  }
+});
+
+// Endpoint to stop recording
+app.post('/stop-recording', async (req, res) => {
+  try {
+    const { egressId } = req.body;
+    if (!egressId) {
+      return res.status(400).json({ error: 'egressId is required' });
+    }
+    await egressClient.stopEgress(egressId);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to stop recording' });
+  }
+});
 
 const getParam = (req, ...names) => {
   for (const name of names) {
