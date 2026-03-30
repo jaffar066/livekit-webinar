@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fi';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import { type Mode, type Role } from './types';
+import RecordingButton from './RecordingButton';
 
 export type RoomFooterProps = {
   roomName: string;
@@ -136,8 +137,8 @@ function DeviceMenu({ title, devices, activeId, onSelect, onClose, anchor }: {
 function SplitButton({ icon, isOn, onColor = '#dc2626', offColor = '#333', onMain, onChevron, open, menu, anchor }: {
   icon: React.ReactNode;
   isOn: boolean;
-  onColor?: string;   // color when isOn=false (danger/red)
-  offColor?: string;  // color when isOn=true  (normal/dark)
+  onColor?: string;
+  offColor?: string;
   onMain: () => void;
   onChevron: () => void;
   open: boolean;
@@ -158,7 +159,6 @@ function SplitButton({ icon, isOn, onColor = '#dc2626', offColor = '#333', onMai
   );
 }
 
-// ─── RoomFooter ────────────────────────────────────────────────
 export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVisible, unreadCount = 0, otherIsSharing = false }: RoomFooterProps) {
   const room = useRoomContext();
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
@@ -321,6 +321,7 @@ useEffect(() => {
       <>
         <footer style={footerStyle}>
           {isHostOrCohost && <>{micBtn}{camBtn}</>}
+          {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
           {speakerBtn}
           <button onClick={onLeave} style={{ ...btn, width: 44, background: '#df3737' }}><FiPower /></button>
           <button onClick={() => setDotsOpen(true)} style={{ ...btn, width: 44, background: '#333' }}>
@@ -358,6 +359,7 @@ useEffect(() => {
       </>}
 
       {isHostOrCohost && <>{micBtn}{camBtn}</>}
+      {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
       {speakerBtn}
 
       {isHostOrCohost && (
