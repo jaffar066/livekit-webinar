@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocalParticipant, useRoomContext, useRemoteParticipants } from '@livekit/components-react';
 import {
   FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor,
@@ -80,9 +80,9 @@ function DeviceMenu({ title, devices, activeId, onSelect, onClose, anchor }: {
   anchor: React.RefObject<HTMLDivElement | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ bottom: 0, left: 0 });
+  const [pos, setPos] = useState<{ bottom: number; left: number } | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (anchor.current) {
       const r = anchor.current.getBoundingClientRect();
       setPos({ bottom: window.innerHeight - r.top + 8, left: r.left + r.width / 2 });
@@ -97,6 +97,9 @@ function DeviceMenu({ title, devices, activeId, onSelect, onClose, anchor }: {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose, anchor]);
+
+  // Don't render until we have the correct position
+  if (!pos) return null;
 
   return (
     <div ref={ref} style={{
