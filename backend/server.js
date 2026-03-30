@@ -9,8 +9,6 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-
-// Update this to the actual folder where your recordings are stored on the VM
 const RECORDINGS_DIR = '/home/azureuser/recordings';
 
 app.use(cors({
@@ -22,9 +20,6 @@ app.use(cors({
 
 app.options('*', cors());
 app.use(express.json());
-
-// 1. Serve the recordings folder as a static route
-// This allows you to access videos at http://your-ip:port/recordings/filename.mp4
 app.use('/recordings', express.static(RECORDINGS_DIR));
 
 const LIVEKIT_URL = process.env.LIVEKIT_URL || 'ws://localhost:7880';
@@ -42,13 +37,9 @@ app.post('/start-recording', async (req, res) => {
   try {
     const { room } = req.body;
     if (!room) return res.status(400).json({ error: 'Room is required' });
-
-    // The filename for the .mp4
-    const fileName = `${room}-${Date.now()}.mp4`;
-    
+    const fileName = `${room}-${Date.now()}.mp4`;    
     // '/out/' is the internal path inside the Egress Docker container
     const filepath = `/out/${fileName}`; 
-
     const response = await egressClient.startRoomCompositeEgress(room, {
       file: { filepath },
     });
@@ -57,7 +48,6 @@ app.post('/start-recording', async (req, res) => {
       success: true,
       egressId: response.egressId,
       fileName: fileName,
-      // This is the URL your frontend can use to play the video later
       downloadUrl: `/recordings/${fileName}` 
     });
   } catch (err) {
@@ -81,13 +71,11 @@ app.post('/stop-recording', async (req, res) => {
   }
 });
 
-// New Endpoint: List all recordings (Optional but helpful)
+
 app.get('/recordings-list', (req, res) => {
-  // Use the fs we imported at the top
   fs.readdir(RECORDINGS_DIR, (err, files) => {
     if (err) {
       console.error('FS Error:', err);
-      // Return an empty array instead of 500 so the frontend doesn't crash
       return res.json({ recordings: [] }); 
     }
     const mp4Files = files.filter(file => file.endsWith('.mp4'));
