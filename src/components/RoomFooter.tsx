@@ -193,7 +193,8 @@ export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVi
   // Load all devices
 const loadDevices = useCallback(async () => {
   try {
-    await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    stream.getTracks().forEach(track => track.stop());
     const all = await navigator.mediaDevices.enumerateDevices();
     setMicDevices(all.filter(d => d.kind === 'audioinput'));
     setCamDevices(all.filter(d => d.kind === 'videoinput'));
@@ -205,7 +206,7 @@ const loadDevices = useCallback(async () => {
   
 useEffect(() => {
   loadDevices();
-}, []);
+}, [loadDevices]);
 
   // Bluetooth auto-switch on device change
   useEffect(() => {
