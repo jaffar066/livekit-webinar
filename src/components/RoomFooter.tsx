@@ -191,13 +191,21 @@ export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVi
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   // Load all devices
-  const loadDevices = useCallback(async () => {
-    await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).catch(() => {});
+const loadDevices = useCallback(async () => {
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     const all = await navigator.mediaDevices.enumerateDevices();
     setMicDevices(all.filter(d => d.kind === 'audioinput'));
     setCamDevices(all.filter(d => d.kind === 'videoinput'));
     setSpeakerDevices(all.filter(d => d.kind === 'audiooutput'));
-  }, []);
+  } catch (err) {
+    console.error('Device load failed:', err);
+  }
+}, []);
+  
+useEffect(() => {
+  loadDevices();
+}, []);
 
   // Bluetooth auto-switch on device change
   useEffect(() => {
