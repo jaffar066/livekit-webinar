@@ -13,6 +13,7 @@
     "@livekit/components-react": "^2.9.20",
     "@livekit/components-styles": "^1.2.0",
     "@opentok/client": "^2.33.1",
+    "lucide-react": "^1.7.0",
     "opentok-layout-js": "^5.5.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

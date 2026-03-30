@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Mode } from './types';
 import type { JSX } from 'react/jsx-runtime';
+import RecordingsPage from './RecordingsPage';
 
 const MODE_CONFIG: Record<
   Mode,
@@ -52,13 +53,17 @@ export type ModeCardSelectorProps = {
   defaultCameraOn?: boolean;
   onChange?: (selection: { mode?: Mode; cameraOn: boolean; name: string }) => void;
   onJoin?: (selection: { mode: Mode; cameraOn: boolean; name: string }) => void;
+  // Added these props
+  activePanel?: 'join' | 'recordings';
+  onPanelChange?: (panel: 'join' | 'recordings') => void;
 };
 
 export function ModeCardSelector({
   forcedMode,
   defaultCameraOn = false,
-  onChange,
   onJoin,
+  activePanel = 'join',
+  onPanelChange,
 }: ModeCardSelectorProps) {
   const [selectedMode, setSelectedMode] = useState<Mode | undefined>(forcedMode ?? undefined);
   const [cameraOnState, setCameraOnState] = useState<Record<Mode, boolean>>({
@@ -75,7 +80,6 @@ export function ModeCardSelector({
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const streamRefs = useRef<Record<string, MediaStream | null>>({});
 
-  // 1. CRITICAL: Stop all camera tracks when component unmounts (e.g. after onJoin)
   useEffect(() => {
     return () => {
       Object.values(streamRefs.current).forEach((stream) => {
@@ -83,16 +87,6 @@ export function ModeCardSelector({
       });
     };
   }, []);
-
-  useEffect(() => {
-    if (selectedMode) {
-      onChange?.({ 
-        mode: selectedMode, 
-        cameraOn: cameraOnState[selectedMode], 
-        name: nameState[selectedMode] 
-      });
-    }
-  }, [selectedMode, cameraOnState, nameState, onChange]);
 
   const stopCamera = (mode: Mode) => {
     if (streamRefs.current[mode]) {
@@ -122,7 +116,6 @@ export function ModeCardSelector({
     e.stopPropagation();
     const isTurningOn = !cameraOnState[mode];
     setCameraOnState((prev) => ({ ...prev, [mode]: isTurningOn }));
-    
     if (isTurningOn) startCamera(mode);
     else stopCamera(mode);
   };
@@ -151,94 +144,131 @@ export function ModeCardSelector({
         <p className="mcs-subtitle">Choose your session type and join instantly</p>
       </div>
 
-      <div className="mcs-grid">
-        {modes.map((cardMode) => {
-          const config = MODE_CONFIG[cardMode];
-          const isSelected = selectedMode === cardMode;
-          const cameraOn = cameraOnState[cardMode];
-          const name = nameState[cardMode];
-          const hasName = name.trim().length > 0;
-
-          return (
-            <div
-              key={cardMode}
-              className={`mcs-card${isSelected ? ' mcs-card--selected' : ''}`}
-              style={{
-                '--card-accent': config.accent,
-                '--card-glow': config.glow,
-                '--card-accent-light': config.accent + '18',
-                maxWidth: forcedMode ? '500px' : '345px',
-                flex: forcedMode ? '0 1 500px' : '1 1 300px'
-              } as React.CSSProperties}
-              onClick={() => handleModeSelect(cardMode)}
-            >
-              <div className="mcs-accent-bar" />
-
-              <div className="mcs-card-header">
-                <div className="mcs-icon-badge">{config.icon}</div>
-                <div className="mcs-title-group">
-                  <div className="mcs-card-title">{config.title}</div>
-                  <div className="mcs-card-desc">{config.description}</div>
-                </div>
-                <div
-                  className={`mcs-toggle-track${cameraOn ? ' mcs-toggle-track--on' : ''}`}
-                  onClick={(e) => handleCameraToggle(cardMode, e)}
-                >
-                  <div className="mcs-toggle-thumb" />
-                </div>
-              </div>
-
-              <div className={`mcs-cam-label${cameraOn ? ' mcs-cam-label--on' : ''}`}>
-                <div className="mcs-cam-dot" />
-                {cameraOn ? 'Camera on' : 'Camera off'}
-              </div>
-
-              <div className="mcs-preview-box">
-                <video
-                  ref={(el) => { videoRefs.current[cardMode] = el; }}
-                  playsInline
-                  muted
-                  className={`mcs-video${cameraOn ? ' mcs-video--visible' : ''}`}
-                />
-                {!cameraOn && (
-                  <div className="mcs-preview-placeholder">
-                    <div className="mcs-preview-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M23 7l-7 5 7 5V7z" />
-                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                      </svg>
-                    </div>
-                    <span className="mcs-preview-text">
-                      {isSelected ? 'Toggle camera above to preview' : 'Select to preview camera'}
-                    </span>
-                  </div>
-                )}
-                {isSelected && (
-                  <div className="mcs-selected-pill">● {config.title}</div>
-                )}
-              </div>
-
-              <div className="mcs-input-group" onClick={(e) => e.stopPropagation()}>
-                <label className="mcs-input-label">Your name</label>
-                <input
-                  className="mcs-input"
-                  placeholder="Enter your name..."
-                  value={name}
-                  onChange={(e) => setNameState((prev) => ({ ...prev, [cardMode]: e.target.value }))}
-                />
-              </div>
-
-              <button
-                className={`mcs-join-btn${hasName ? ' mcs-join-btn--active' : ''}`}
-                onClick={(e) => handleJoin(cardMode, e)}
-                disabled={!hasName}
-              >
-                Join {config.title}
-              </button>
-            </div>
-          );
-        })}
+      {/* 3. Panel Switcher Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
+        <button
+          onClick={() => onPanelChange?.('join')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            border: 'none',
+            background: activePanel === 'join' ? '#4f46e5' : '#222',
+            color: '#fff',
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+        >
+          Join Session
+        </button>
+        <button
+          onClick={() => onPanelChange?.('recordings')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            border: 'none',
+            background: activePanel === 'recordings' ? '#4f46e5' : '#222',
+            color: '#fff',
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+        >
+          Recordings
+        </button>
       </div>
+
+      {/* 4. Conditional Rendering */}
+      {activePanel === 'join' ? (
+        <div className="mcs-grid">
+          {modes.map((cardMode) => {
+            const config = MODE_CONFIG[cardMode];
+            const isSelected = selectedMode === cardMode;
+            const cameraOn = cameraOnState[cardMode];
+            const name = nameState[cardMode];
+            const hasName = name.trim().length > 0;
+
+            return (
+              <div
+                key={cardMode}
+                className={`mcs-card${isSelected ? ' mcs-card--selected' : ''}`}
+                style={{
+                  '--card-accent': config.accent,
+                  '--card-glow': config.glow,
+                  '--card-accent-light': config.accent + '18',
+                  maxWidth: forcedMode ? '500px' : '345px',
+                  flex: forcedMode ? '0 1 500px' : '1 1 300px',
+                  // REMOVED background radiant gradient here, should be handled in CSS
+                } as React.CSSProperties}
+                onClick={() => handleModeSelect(cardMode)}
+              >
+                <div className="mcs-accent-bar" />
+                <div className="mcs-card-header">
+                  <div className="mcs-icon-badge">{config.icon}</div>
+                  <div className="mcs-title-group">
+                    <div className="mcs-card-title">{config.title}</div>
+                    <div className="mcs-card-desc">{config.description}</div>
+                  </div>
+                  <div
+                    className={`mcs-toggle-track${cameraOn ? ' mcs-toggle-track--on' : ''}`}
+                    onClick={(e) => handleCameraToggle(cardMode, e)}
+                  >
+                    <div className="mcs-toggle-thumb" />
+                  </div>
+                </div>
+
+                <div className={`mcs-cam-label${cameraOn ? ' mcs-cam-label--on' : ''}`}>
+                  <div className="mcs-cam-dot" />
+                  {cameraOn ? 'Camera on' : 'Camera off'}
+                </div>
+
+                <div className="mcs-preview-box">
+                  <video
+                    ref={(el) => { videoRefs.current[cardMode] = el; }}
+                    playsInline
+                    muted
+                    className={`mcs-video${cameraOn ? ' mcs-video--visible' : ''}`}
+                  />
+                  {!cameraOn && (
+                    <div className="mcs-preview-placeholder">
+                      <div className="mcs-preview-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M23 7l-7 5 7 5V7z" />
+                          <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                        </svg>
+                      </div>
+                      <span className="mcs-preview-text">
+                        {isSelected ? 'Toggle camera above to preview' : 'Select to preview camera'}
+                      </span>
+                    </div>
+                  )}
+                  {isSelected && <div className="mcs-selected-pill">● {config.title}</div>}
+                </div>
+
+                <div className="mcs-input-group" onClick={(e) => e.stopPropagation()}>
+                  <label className="mcs-input-label">Your name</label>
+                  <input
+                    className="mcs-input"
+                    placeholder="Enter your name..."
+                    value={name}
+                    onChange={(e) => setNameState((prev) => ({ ...prev, [cardMode]: e.target.value }))}
+                  />
+                </div>
+
+                <button
+                  className={`mcs-join-btn${hasName ? ' mcs-join-btn--active' : ''}`}
+                  onClick={(e) => handleJoin(cardMode, e)}
+                  disabled={!hasName}
+                >
+                  Join {config.title}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <RecordingsPage />
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Mode, Role } from './types';
 import { ModeCardSelector } from './ModeCardSelector';
 
@@ -19,12 +20,16 @@ export function JoinScreen({
   forcedMode,
   forcedRole,
 }: JoinProps) {
+  const [activePanel, setActivePanel] = useState<'join' | 'recordings'>('join');
+
   return (
     <div className="join-screen">
       <ModeCardSelector
         forcedMode={forcedMode}
         defaultMode={defaultMode}
         defaultCameraOn={defaultCameraOn}
+        activePanel={activePanel}
+        onPanelChange={(panel) => setActivePanel(panel)}
         onJoin={({ mode, cameraOn, name }) => {
           onJoin({
             identity: name.trim(),

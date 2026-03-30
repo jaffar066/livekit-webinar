@@ -23,7 +23,8 @@ export default function RecordingButton({ room, onToast }: { room: string; onToa
 
   const start = useCallback(async () => {
     try {
-      const res = await startRecording(room);
+        const res = await startRecording(room);
+        console.log('start recording response', res);
       if (!res.success) throw new Error(res.error || 'start failed');
       setEgressId(res.egressId ?? null);
       setRecording(true);
@@ -38,6 +39,7 @@ export default function RecordingButton({ room, onToast }: { room: string; onToa
     try {
       if (!egressId) { onToast('No recording in progress'); return; }
       const res = await stopRecording(egressId);
+      console.log('stop recording response', res);
       if (!res.success) throw new Error(res.error || 'stop failed');
       setRecording(false);
       setEgressId(null);
