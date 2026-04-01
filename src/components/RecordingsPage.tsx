@@ -11,6 +11,21 @@ export default function RecordingsPage() {
     ((import.meta.env.VITE_TOKEN_SERVER_URL as string)?.replace(/\/get-token$/, '').replace(/\/$/, '') || 'http://localhost:3001');
   const backendUrl = serverBaseUrl;
 
+  const deleteRecording = async (file: string) => {
+    if (!window.confirm(`Delete "${file}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`${backendUrl}/delete-recording/${encodeURIComponent(file)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setRecordings((prev) => prev.filter((r) => r !== file));
+      if (selectedRecording === file) setSelectedRecording(null);
+    } catch (err: any) {
+      alert('Failed to delete: ' + (err?.message || 'Unknown error'));
+    }
+  };
+
   const readRecordings = async () => {
     setLoading(true);
     setError(null);
@@ -78,6 +93,12 @@ export default function RecordingsPage() {
                 >
                   Download
                 </a>
+                <button
+                  onClick={() => deleteRecording(file)}
+                  style={{ flex: 1, borderRadius: 8, border: '1px solid #7a2020', background: '#3d1010', color: '#ff6b6b', padding: '6px', cursor: 'pointer' }}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           );
