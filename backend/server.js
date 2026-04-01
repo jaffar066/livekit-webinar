@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import path from 'path'; // Added for path handling
 import { AccessToken, EgressClient } from 'livekit-server-sdk';
 import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
@@ -13,7 +13,7 @@ const RECORDINGS_DIR = '/home/azureuser/recordings';
 
 app.use(cors({
    origin: [ 'http://localhost:5173', process.env.CORS_ORIGIN ].filter(Boolean),
-   methods: ['GET', 'POST', 'OPTIONS'],
+   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
    allowedHeaders: ['Content-Type', 'Authorization'],
    credentials: true,
 }));
@@ -71,6 +71,25 @@ app.post('/stop-recording', async (req, res) => {
   }
 });
 
+
+app.delete('/delete-recording/:filename', (req, res) => {
+  const filename = req.params.filename;
+  if (!filename || !/^[\w\-. ]+\.mp4$/i.test(filename)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const filepath = path.join(RECORDINGS_DIR, filename);
+  if (!filepath.startsWith(RECORDINGS_DIR + path.sep) && filepath !== RECORDINGS_DIR) {
+    return res.status(400).json({ error: 'Invalid path' });
+  }
+  fs.unlink(filepath, (err) => {
+    if (err) {
+      if (err.code === 'ENOENT') return res.status(404).json({ error: 'File not found' });
+      console.error('Delete error:', err);
+      return res.status(500).json({ error: 'Failed to delete recording' });
+    }
+    res.json({ success: true });
+  });
+});
 
 app.get('/recordings-list', (req, res) => {
   fs.readdir(RECORDINGS_DIR, (err, files) => {
