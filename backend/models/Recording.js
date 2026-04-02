@@ -22,7 +22,7 @@ const recordingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['recording', 'stopped', 'failed'],
+      enum: ['recording', 'stopped', 'completed', 'failed'],
       default: 'recording',
     },
     startedBy: {
@@ -30,9 +30,21 @@ const recordingSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    startedAt: {
+      type: Date,
+      default: Date.now,
+    },
     stoppedAt: {
       type: Date,
       default: null,
+    },
+    duration: {
+      type: Number,
+      default: 0,
+    },
+    fileSize: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }

@@ -26,18 +26,6 @@ function randomRoomId() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function buildUrl(params: { room?: string | null; role?: Role | null; mode?: Mode | null }) {
-  if (typeof window === 'undefined') return;
-  const url = new URL(window.location.href);
-  if (params.room === null) url.searchParams.delete('room');
-  else if (params.room) url.searchParams.set('room', params.room);
-  if (params.role === null) url.searchParams.delete('role');
-  else if (params.role) url.searchParams.set('role', params.role);
-  if (params.mode === null) url.searchParams.delete('mode');
-  else if (params.mode) url.searchParams.set('mode', params.mode);
-  window.history.replaceState({}, '', url.toString());
-}
-
 export default function App() {
   const navigate = useNavigate();
 
@@ -79,7 +67,7 @@ export default function App() {
   const handleAuth = (user: object) => {
     localStorage.setItem('userData', JSON.stringify(user));
     setAuthUser(user);
-    navigate('/join');
+    navigate('/home');
   };
 
   const handleLogout = () => {
@@ -105,15 +93,13 @@ export default function App() {
     window.sessionStorage.setItem('livekit-session', JSON.stringify(newSession));
     setSessionInfo(newSession);
     setRole(requestedRole);
-    buildUrl(newSession);
-    navigate('/room');
+    navigate(`/meeting?room=${encodeURIComponent(room)}&role=${requestedRole}&mode=${mode}`);
   };
 
   const handleLeave = () => {
     window.sessionStorage.removeItem('livekit-session');
     setSessionInfo(null);
-    buildUrl({ room: null, role: null, mode: null });
-    navigate('/join');
+    navigate('/home');
   };
 
   const HomeDashboard = (
@@ -138,24 +124,47 @@ export default function App() {
     </DashboardLayout>
   );
 
-  const RoomPage = sessionInfo ? (
-    <RoomView
-      identity={sessionInfo.identity}
-      room={sessionInfo.room}
-      role={role}
-      mode={sessionInfo.mode}
-      cameraOn={sessionInfo.cameraOn}
-      onLeave={handleLeave}
-      tokenServerUrl={(import.meta.env.VITE_TOKEN_SERVER_URL as string) ?? 'http://localhost:3001/get-token'}
-      onRole={setRole}
-    />
-  ) : null;
+  const MeetingRouteFallback = () => {
+    // If they have sessionInfo, go to meeting. 
+    if (sessionInfo) {
+      return (
+        <RoomView
+          identity={sessionInfo.identity}
+          room={sessionInfo.room}
+          role={role}
+          mode={sessionInfo.mode}
+          cameraOn={sessionInfo.cameraOn}
+          onLeave={handleLeave}
+          tokenServerUrl={(import.meta.env.VITE_TOKEN_SERVER_URL as string) ?? 'http://localhost:3001/get-token'}
+          onRole={setRole}
+        />
+      );
+    }
+    // If they have a room in the URL but no session, show JoinScreen for guests
+    if (urlParams.room) {
+      return (
+        <div className="guest-join-wrapper" style={{ height: '100vh', width: '100vw' }}>
+          <JoinScreen
+            onJoin={handleJoin}
+            defaultIdentity={''}
+            defaultRole={urlParams.role ?? 'viewer'}
+            defaultCameraOn={false}
+            forcedMode={urlParams.mode ?? undefined}
+            defaultMode={urlParams.mode ?? undefined}
+            forcedRole={urlParams.role ?? undefined}
+          />
+        </div>
+      );
+    }
+    // Otherwise redirect to home/auth
+    return <Navigate to={authUser ? '/home' : '/auth'} replace />;
+  };
 
   return (
     <Routes>
       <Route path="/auth" element={authUser ? <Navigate to="/home" replace /> : <Login onLogin={handleAuth} onGoSignUp={() => navigate('/signup')} />} />
       <Route path="/signup" element={authUser ? <Navigate to="/home" replace /> : <SignUp onSignUp={handleAuth} onGoLogin={() => navigate('/auth')} />} />
-      <Route path="/room" element={authUser ? (RoomPage ?? <Navigate to="/home" replace />) : <Navigate to="/auth" replace />} />
+      <Route path="/meeting" element={<MeetingRouteFallback />} />
       <Route path="/home" element={authUser ? HomeDashboard : <Navigate to="/auth" replace />} />
       <Route path="/recordings" element={authUser ? RecordingsDashboard : <Navigate to="/auth" replace />} />
       <Route path="/" element={<Navigate to={authUser ? '/home' : '/auth'} replace />} />

@@ -56,6 +56,13 @@ export const stopRecording = async (req, res) => {
     const { egressId } = req.body;
     if (!egressId) return res.status(400).json({ error: 'egressId is required' });
     await egressClient.stopEgress(egressId);
+    await Recording.findOneAndUpdate(
+      { egressId },
+      {
+        status: 'stopped',
+        stoppedAt: new Date(),
+      }
+    );
     res.json({ success: true });
   } catch (err) {
     console.error(err);
