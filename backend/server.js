@@ -1,166 +1,34 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { AccessToken, EgressClient } from 'livekit-server-sdk';
-import fs from 'fs';
-import path from 'path';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
+import corsMiddleware, { corsOptions } from './middleware/corsMiddleware.js';
+import tokenRoutes from './routes/tokenRoutes.js';
+import recordingRoutes from './routes/recordingRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import { RECORDINGS_DIR } from './services/recordingService.js';
+
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const RECORDINGS_DIR = '/home/azureuser/recordings';
+const MONGO_URI = process.env.MONGO_URI;
 
-app.use(cors({
-   origin: [ 'http://localhost:5173', process.env.CORS_ORIGIN ].filter(Boolean),
-   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-   allowedHeaders: ['Content-Type', 'Authorization'],
-   credentials: true,
-}));
+// Connect to MongoDB
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log('MongoDB connected:', MONGO_URI))
+  .catch((err) => console.error('MongoDB connection error:', err));
 
-app.options('*', cors());
+app.use(corsMiddleware);
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use('/recordings', express.static(RECORDINGS_DIR));
 
-const LIVEKIT_URL = process.env.LIVEKIT_URL || 'ws://localhost:7880';
-const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || 'devkey';
-const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || 'secret';
-
-const egressClient = new EgressClient(
-  LIVEKIT_URL.replace('ws', 'http'),
-  LIVEKIT_API_KEY,
-  LIVEKIT_API_SECRET
-);
-
-// Endpoint to start recording a room
-app.post('/start-recording', async (req, res) => {
-  try {
-    const { room } = req.body;
-    if (!room) return res.status(400).json({ error: 'Room is required' });
-    const fileName = `${room}-${Date.now()}.mp4`;    
-    // '/out/' is the internal path inside the Egress Docker container
-    const filepath = `/out/${fileName}`; 
-    const response = await egressClient.startRoomCompositeEgress(room, {
-      file: { filepath },
-    });
-
-    res.json({
-      success: true,
-      egressId: response.egressId,
-      fileName: fileName,
-      downloadUrl: `/recordings/${fileName}` 
-    });
-  } catch (err) {
-    console.error('Egress Error:', err);
-    res.status(500).json({ error: 'Failed to start recording' });
-  }
-});
-
-// Endpoint to stop recording
-app.post('/stop-recording', async (req, res) => {
-  try {
-    const { egressId } = req.body;
-    if (!egressId) {
-      return res.status(400).json({ error: 'egressId is required' });
-    }
-    await egressClient.stopEgress(egressId);
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to stop recording' });
-  }
-});
-
-
-app.delete('/delete-recording/:filename', (req, res) => {
-  const filename = req.params.filename;
-  if (!filename || !/^[\w\-. ]+\.mp4$/i.test(filename)) {
-    return res.status(400).json({ error: 'Invalid filename' });
-  }
-  const filepath = path.join(RECORDINGS_DIR, filename);
-  if (!filepath.startsWith(RECORDINGS_DIR + path.sep) && filepath !== RECORDINGS_DIR) {
-    return res.status(400).json({ error: 'Invalid path' });
-  }
-  fs.unlink(filepath, (err) => {
-    if (err) {
-      if (err.code === 'ENOENT') return res.status(404).json({ error: 'File not found' });
-      console.error('Delete error:', err);
-      return res.status(500).json({ error: 'Failed to delete recording' });
-    }
-    res.json({ success: true });
-  });
-});
-
-app.get('/recordings-list', (req, res) => {
-  fs.readdir(RECORDINGS_DIR, (err, files) => {
-    if (err) {
-      console.error('FS Error:', err);
-      return res.json({ recordings: [] }); 
-    }
-    const mp4Files = files.filter(file => file.endsWith('.mp4'));
-    res.json({ recordings: mp4Files });
-  });
-});
-
-const getParam = (req, ...names) => {
-  for (const name of names) {
-    if (req.body && typeof req.body === 'object' && req.body[name] != null) {
-      return req.body[name];
-    }
-    if (req.query && req.query[name] != null) {
-      return req.query[name];
-    }
-  }
-  return undefined;
-};
-
-const roomHostById = new Map();
-
-const createTokenResponse = async (req, res) => {
-  const identity = getParam(req, 'identity', 'participantIdentity', 'participant_name') ?? '';
-  const room = getParam(req, 'room', 'roomName', 'room_name') ?? '';
-
-  if (!identity || !room) {
-    return res.status(400).json({ error: 'Missing required fields: identity and room' });
-  }
-
-  const existingHost = roomHostById.get(room);
-  const requestedRole = (getParam(req, 'role') || '').toString();
-  const isValidRole = ['host', 'cohost', 'viewer'].includes(requestedRole);
-  const role = isValidRole
-    ? requestedRole
-    : existingHost
-    ? existingHost === identity
-      ? 'host'
-      : 'viewer'
-    : 'host';
-
-  if (!existingHost && role === 'host') {
-    roomHostById.set(room, identity);
-  }
-
-  const grant = {
-    room,
-    roomJoin: true,
-    canPublish: true, 
-    canSubscribe: true,
-    participantAttributes: { role },
-  };
-  const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
-    identity: identity.toString(),
-  });
-  at.addGrant(grant);
-
-  const participantToken = await at.toJwt();
-  res.json({
-    server_url: LIVEKIT_URL,
-    participant_token: participantToken,
-    role,
-  });
-};
-
-app.post('/get-token', createTokenResponse);
-app.get('/get-token', createTokenResponse);
+app.use('/auth', authRoutes);
+app.use(tokenRoutes);
+app.use(recordingRoutes);
 
 app.listen(PORT, () => {
   console.log(`LiveKit token server listening on http://localhost:${PORT}`);

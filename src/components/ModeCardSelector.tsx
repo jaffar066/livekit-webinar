@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Mode } from './types';
 import type { JSX } from 'react/jsx-runtime';
-import RecordingsPage from './RecordingsPage';
 
 const MODE_CONFIG: Record<
   Mode,
@@ -53,17 +52,12 @@ export type ModeCardSelectorProps = {
   defaultCameraOn?: boolean;
   onChange?: (selection: { mode?: Mode; cameraOn: boolean; name: string }) => void;
   onJoin?: (selection: { mode: Mode; cameraOn: boolean; name: string }) => void;
-  // Added these props
-  activePanel?: 'join' | 'recordings';
-  onPanelChange?: (panel: 'join' | 'recordings') => void;
 };
 
 export function ModeCardSelector({
   forcedMode,
   defaultCameraOn = false,
   onJoin,
-  activePanel = 'join',
-  onPanelChange,
 }: ModeCardSelectorProps) {
   const [selectedMode, setSelectedMode] = useState<Mode | undefined>(forcedMode ?? undefined);
   const [cameraOnState, setCameraOnState] = useState<Record<Mode, boolean>>({
@@ -144,43 +138,7 @@ export function ModeCardSelector({
         <p className="mcs-subtitle">Choose your session type and join instantly</p>
       </div>
 
-      {/* 3. Panel Switcher Buttons */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
-        <button
-          onClick={() => onPanelChange?.('join')}
-          style={{
-            padding: '10px 20px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            border: 'none',
-            background: activePanel === 'join' ? '#4f46e5' : '#222',
-            color: '#fff',
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
-        >
-          Join Session
-        </button>
-        <button
-          onClick={() => onPanelChange?.('recordings')}
-          style={{
-            padding: '10px 20px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            border: 'none',
-            background: activePanel === 'recordings' ? '#4f46e5' : '#222',
-            color: '#fff',
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
-        >
-          Recordings
-        </button>
-      </div>
-
-      {/* 4. Conditional Rendering */}
-      {activePanel === 'join' ? (
-        <div className="mcs-grid">
+      <div className="mcs-grid">
           {modes.map((cardMode) => {
             const config = MODE_CONFIG[cardMode];
             const isSelected = selectedMode === cardMode;
@@ -265,10 +223,7 @@ export function ModeCardSelector({
               </div>
             );
           })}
-        </div>
-      ) : (
-        <RecordingsPage />
-      )}
+      </div>
     </div>
   );
 }
