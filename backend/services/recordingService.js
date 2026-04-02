@@ -43,6 +43,7 @@ export const startRecording = async (req, res) => {
       egressId: response.egressId,
       fileName,
       downloadUrl: `/recordings/${fileName}`,
+      startedBy: req.user.id,
     });
   } catch (err) {
     console.error('Egress Error:', err);
