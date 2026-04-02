@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { EgressClient } from 'livekit-server-sdk';
 import fs from 'fs';
 import path from 'path';
+import Recording from '../models/Recording.js';
 
 dotenv.config();
 
@@ -29,6 +30,14 @@ export const startRecording = async (req, res) => {
       file: { filepath },
     });
 
+    await Recording.create({
+      room,
+      egressId: response.egressId,
+      fileName,
+      downloadUrl: `/recordings/${fileName}`,
+      startedBy: req.user.id,
+    });
+
     res.json({
       success: true,
       egressId: response.egressId,
@@ -44,9 +53,7 @@ export const startRecording = async (req, res) => {
 export const stopRecording = async (req, res) => {
   try {
     const { egressId } = req.body;
-    if (!egressId) {
-      return res.status(400).json({ error: 'egressId is required' });
-    }
+    if (!egressId) return res.status(400).json({ error: 'egressId is required' });
     await egressClient.stopEgress(egressId);
     res.json({ success: true });
   } catch (err) {
@@ -55,40 +62,36 @@ export const stopRecording = async (req, res) => {
   }
 };
 
-export const deleteRecording = (req, res) => {
+export const deleteRecording = async (req, res) => {
   const filename = req.params.filename;
   if (!filename || !/^[\w\-. ]+\.mp4$/i.test(filename)) {
     return res.status(400).json({ error: 'Invalid filename' });
   }
+
+  const record = await Recording.findOne({ fileName: filename, startedBy: req.user.id });
+  if (!record) return res.status(403).json({ error: 'Not found or access denied' });
+
   const filepath = path.join(RECORDINGS_DIR, filename);
   if (!filepath.startsWith(RECORDINGS_DIR + path.sep) && filepath !== RECORDINGS_DIR) {
     return res.status(400).json({ error: 'Invalid path' });
   }
-  fs.unlink(filepath, (err) => {
-    if (err) {
-      if (err.code === 'ENOENT') return res.status(404).json({ error: 'File not found' });
+
+  fs.unlink(filepath, async (err) => {
+    if (err && err.code !== 'ENOENT') {
       console.error('Delete error:', err);
       return res.status(500).json({ error: 'Failed to delete recording' });
     }
+    await Recording.deleteOne({ _id: record._id });
     res.json({ success: true });
   });
 };
 
-export const listRecordings = (req, res) => {
-  fs.readdir(RECORDINGS_DIR, (err, files) => {
-    if (err) {
-      console.error('FS Error:', err);
-      return res.json({ recordings: [] });
-    }
-    const mp4Files = files.filter((file) => file.endsWith('.mp4'));
-    const recordings = mp4Files.map((name) => {
-      try {
-        const stat = fs.statSync(path.join(RECORDINGS_DIR, name));
-        return { name, size: stat.size };
-      } catch {
-        return { name, size: 0 };
-      }
-    });
-    res.json({ recordings });
-  });
+export const listRecordings = async (req, res) => {
+  try {
+    const records = await Recording.find({ startedBy: req.user.id }).sort({ createdAt: -1 });
+    res.json({ recordings: records.map((r) => r.fileName) });
+  } catch (err) {
+    console.error('List error:', err);
+    res.json({ recordings: [] });
+  }
 };

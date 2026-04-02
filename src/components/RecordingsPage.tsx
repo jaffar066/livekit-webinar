@@ -52,7 +52,10 @@ export default function RecordingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${backendUrl}/recordings-list`, { method: 'GET', credentials: 'include' });
+      const res = await fetch(`${backendUrl}/recordings-list`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (!Array.isArray(json.recordings)) throw new Error('Invalid response structure');
@@ -78,7 +81,7 @@ export default function RecordingsPage() {
     try {
       const res = await fetch(`${backendUrl}/delete-recording/${encodeURIComponent(file)}`, {
         method: 'DELETE',
-        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setRecordings((prev) => prev.filter((r) => r !== file));
