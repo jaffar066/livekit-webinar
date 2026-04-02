@@ -56,7 +56,7 @@ export default function RecordingsPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (!Array.isArray(json.recordings)) throw new Error('Invalid response structure');
-      setRecordings(json.recordings);
+      setRecordings(json.recordings.filter((r: unknown) => typeof r === 'string'));
     } catch (err: any) {
       setError(err?.message || 'Unable to load recordings');
       setRecordings([]);
@@ -93,7 +93,7 @@ export default function RecordingsPage() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return recordings
-      .filter((f) => f.toLowerCase().includes(q))
+      .filter((f) => typeof f === 'string' && f.toLowerCase().includes(q))
       .sort((a, b) => extractMeta(b).ts - extractMeta(a).ts);
   }, [recordings, search]);
 
