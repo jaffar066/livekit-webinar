@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const BASE = import.meta.env.VITE_SERVER_BASE_URL || 'http://localhost:3000';
 
@@ -11,6 +12,7 @@ export function Login({ onLogin, onGoSignUp }: Props) {
   // login
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
@@ -19,6 +21,8 @@ export function Login({ onLogin, onGoSignUp }: Props) {
   const [fpOtp, setFpOtp]         = useState('');
   const [fpNewPw, setFpNewPw]     = useState('');
   const [fpConfirm, setFpConfirm] = useState('');
+  const [showFpNewPw, setShowFpNewPw] = useState(false);
+  const [showFpConfirm, setShowFpConfirm] = useState(false);
   const [fpError, setFpError]     = useState('');
   const [fpLoading, setFpLoading] = useState(false);
 
@@ -114,8 +118,18 @@ export function Login({ onLogin, onGoSignUp }: Props) {
       <h1 className="auth-logo">New Password</h1>
       <p className="auth-sub">Choose a new password for your account.</p>
       <form onSubmit={handleResetPassword}>
-        <input type="password" placeholder="New password" value={fpNewPw} onChange={e => setFpNewPw(e.target.value)} required autoFocus />
-        <input type="password" placeholder="Confirm new password" value={fpConfirm} onChange={e => setFpConfirm(e.target.value)} required />
+        <div style={{ position: 'relative', width: '100%' }}>
+          <input type={showFpNewPw ? 'text' : 'password'} placeholder="New password" value={fpNewPw} onChange={e => setFpNewPw(e.target.value)} required autoFocus style={{ width: '100%', boxSizing: 'border-box' }} />
+          <button type="button" onClick={() => setShowFpNewPw(!showFpNewPw)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            {showFpNewPw ? <EyeOff size={20} color="#666" /> : <Eye size={20} color="#666" />}
+          </button>
+        </div>
+        <div style={{ position: 'relative', width: '100%' }}>
+          <input type={showFpConfirm ? 'text' : 'password'} placeholder="Confirm new password" value={fpConfirm} onChange={e => setFpConfirm(e.target.value)} required style={{ width: '100%', boxSizing: 'border-box' }} />
+          <button type="button" onClick={() => setShowFpConfirm(!showFpConfirm)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            {showFpConfirm ? <EyeOff size={20} color="#666" /> : <Eye size={20} color="#666" />}
+          </button>
+        </div>
         {fpError && <p className="auth-error">{fpError}</p>}
         <button type="submit" disabled={fpLoading}>{fpLoading ? 'Saving…' : 'Reset Password →'}</button>
       </form>
@@ -129,7 +143,12 @@ export function Login({ onLogin, onGoSignUp }: Props) {
         <p className="auth-sub">Sign in to your account</p>
         <form onSubmit={handleLogin}>
           <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <div style={{ position: 'relative', width: '100%' }}>
+            <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', boxSizing: 'border-box' }} />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              {showPassword ? <EyeOff size={20} color="#666" /> : <Eye size={20} color="#666" />}
+            </button>
+          </div>
           {error && <p className="auth-error">{error}</p>}
           <button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Log In →'}</button>
         </form>

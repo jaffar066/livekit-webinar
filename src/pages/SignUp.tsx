@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const BASE = import.meta.env.VITE_SERVER_BASE_URL || 'http://localhost:3000';
 
@@ -11,6 +12,7 @@ export function SignUp({ onSignUp, onGoLogin }: Props) {
   const [form, setForm] = useState({
     fName: '', lName: '', email: '', password: '', phoneNumber: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +51,12 @@ export function SignUp({ onSignUp, onGoLogin }: Props) {
             <input type="text" placeholder="Last name" value={form.lName} onChange={set('lName')} required />
           </div>
           <input type="email" placeholder="Email address" value={form.email} onChange={set('email')} required />
-          <input type="password" placeholder="Password" value={form.password} onChange={set('password')} required />
+          <div style={{ position: 'relative', width: '100%' }}>
+            <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={form.password} onChange={set('password')} required style={{ width: '100%', boxSizing: 'border-box' }} />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              {showPassword ? <EyeOff size={20} color="#666" /> : <Eye size={20} color="#666" />}
+            </button>
+          </div>
           <input type="tel" placeholder="Phone number" value={form.phoneNumber} onChange={set('phoneNumber')} required />
           {error && <p className="auth-error">{error}</p>}
           <button type="submit" disabled={loading}>
