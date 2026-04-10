@@ -97,13 +97,13 @@ export default function OpentokLayout({ participants, role }: { participants: an
                             overflow: 'hidden',
                             background: '#1a1a1a',
                             position: 'relative',
-                            outline: (tile.participant.isSpeaking && tile.source === Track.Source.Camera)
+                            outline: (tile.participant.isSpeaking && tile.source === Track.Source.Camera && !tile.participant.isLocal)
                                 ? '2px solid #e91b1b'
                                 : '1px solid #333',
                         }}>
 
                             {/* Mic Icon */}
-                            {tile.participant.isSpeaking && tile.source === Track.Source.Camera && (
+                            {tile.participant.isSpeaking && tile.source === Track.Source.Camera && !tile.participant.isLocal && (
                                 <div style={{
                                     position: 'absolute', top: 12, right: 12, zIndex: 100,
                                     background: '#e91b1b', color: '#fff', width: 26, height: 26,
