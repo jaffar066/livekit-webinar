@@ -2,18 +2,22 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import Stripe from 'stripe';
+import errorMiddleware from './middleware/errorMiddleware.js';
 
 dotenv.config();
 
 import corsMiddleware, { corsOptions } from './middleware/corsMiddleware.js';
 import tokenRoutes from './routes/tokenRoutes.js';
 import recordingRoutes from './routes/recordingRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import { RECORDINGS_DIR } from './services/recordingService.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const MONGO_URI = process.env.MONGO_URI;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Connect to MongoDB
 mongoose
@@ -29,6 +33,8 @@ app.use('/recordings', express.static(RECORDINGS_DIR));
 app.use('/auth', authRoutes);
 app.use(tokenRoutes);
 app.use(recordingRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use(errorMiddleware);
 
 app.listen(PORT, () => {
   console.log(`LiveKit token server listening on http://localhost:${PORT}`);

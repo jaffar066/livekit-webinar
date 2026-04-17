@@ -16,7 +16,8 @@
     "mongoose": "^9.3.3",
     "nodemailer": "^8.0.4",
     "opentok": "^2.23.1",
-    "resend": "^6.10.0"
+    "resend": "^6.10.0",
+    "stripe": "^22.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

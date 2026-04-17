@@ -6,7 +6,8 @@ import { RoomView } from '../src/components/RoomView';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
 import { DashboardLayout } from './components/DashboardLayout';
-import RecordingsPage from './components/RecordingsPage';
+import RecordingsPage from './pages/RecordingsPage';
+import PaymentPage from './pages/PaymentPage';
 
 type Role = 'host' | 'cohost' | 'viewer';
 type Mode = 'live' | 'webinar' | 'conference';
@@ -123,6 +124,13 @@ export default function App() {
       </div>
     </DashboardLayout>
   );
+  const PaymentDashboard = (
+    <DashboardLayout user={authUser} onLogout={handleLogout}>
+      <div className="dash-recordings-wrap">
+        <PaymentPage />
+      </div>
+    </DashboardLayout>
+  );
 
   const MeetingRouteFallback = () => {
     // If they have sessionInfo, go to meeting. 
@@ -167,6 +175,7 @@ export default function App() {
       <Route path="/meeting" element={<MeetingRouteFallback />} />
       <Route path="/home" element={authUser ? HomeDashboard : <Navigate to="/auth" replace />} />
       <Route path="/recordings" element={authUser ? RecordingsDashboard : <Navigate to="/auth" replace />} />
+      <Route path="/payment" element={authUser ? PaymentDashboard : <Navigate to="/auth" replace />} />
       <Route path="/" element={<Navigate to={authUser ? '/home' : '/auth'} replace />} />
       <Route path="*" element={<Navigate to={authUser ? '/home' : '/auth'} replace />} />
     </Routes>

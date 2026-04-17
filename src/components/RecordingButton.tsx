@@ -1,21 +1,6 @@
 import { useCallback, useState } from 'react';
 import { startRecording, stopRecording } from '../services/recordingService';
-
-function RecordIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="6" />
-    </svg>
-  );
-}
-
-function StopIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-      <rect x="6" y="6" width="12" height="12" rx="2" />
-    </svg>
-  );
-}
+import recordIcon from '../assets/record.png';
 
 export default function RecordingButton({ room, onToast }: { room: string; onToast: (m: string) => void }) {
   const [recording, setRecording] = useState(false);
@@ -50,16 +35,31 @@ export default function RecordingButton({ room, onToast }: { room: string; onToa
     }
   }, [egressId, onToast]);
 
-  return (
-    <button
-      onClick={() => (recording ? stop() : start())}
-      title={recording ? 'Stop recording' : 'Start recording'}
+return (
+  <button
+    onClick={() => (recording ? stop() : start())}
+    title={recording ? 'Stop recording' : 'Start recording'}
+    style={{
+      height: 44,
+      width: 44,
+      border: 'none',
+      borderRadius: 12,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      background: recording ? '#df3737' : '#333'
+    }}
+  >
+    <img
+      src={recordIcon}
+      alt="record"
       style={{
-        height: 44, width: 44, border: 'none', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20, cursor: 'pointer', color: '#fff', background: recording ? '#df3737' : '#333'
+        width: 20,
+        height: 20,
+        filter: recording ? 'brightness(0) invert(1)' : 'none'
       }}
-    >
-      {recording ? <StopIcon /> : <RecordIcon />}
-    </button>
-  );
+    />
+  </button>
+);
 }
