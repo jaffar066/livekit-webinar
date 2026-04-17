@@ -15,7 +15,7 @@ const PaymentButton = ({ items, userId }: PaymentButtonProps) => {
   const handleCheckout = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/payments/create-checkout-session', {
+      const res = await fetch(`${import.meta.env.VITE_SERVER_BASE_URL}/api/payments/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, userId }),
