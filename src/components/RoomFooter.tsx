@@ -2,11 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { useLocalParticipant, useRoomContext, useRemoteParticipants } from '@livekit/components-react';
 import {
   FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor,
-  FiPower, FiMessageSquare, FiMoreHorizontal, FiX, FiChevronUp, FiCheck,
+   FiMessageSquare, FiMoreHorizontal, FiX, FiChevronUp, FiCheck,
 } from 'react-icons/fi';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import { type Mode, type Role } from './types';
 import RecordingButton from './RecordingButton';
+import Phone from '../assets/phone.png'
 
 export type RoomFooterProps = {
   roomName: string;
@@ -323,7 +324,6 @@ useEffect(() => {
           {isHostOrCohost && <>{micBtn}{camBtn}</>}
           {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
           {speakerBtn}
-          <button onClick={onLeave} style={{ ...btn, width: 44, background: '#df3737' }}><FiPower /></button>
           <button onClick={() => setDotsOpen(true)} style={{ ...btn, width: 44, background: '#333' }}>
             <FiMoreHorizontal />
             {unreadCount > 0 && !chatVisible && <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, background: '#dc2626', borderRadius: '50%' }} />}
@@ -381,7 +381,13 @@ useEffect(() => {
         )}
       </button>
 
-      <button onClick={onLeave} style={{ ...btn, width: 44, background: '#df3737' }}><FiPower /></button>
+      <button onClick={onLeave} style={{ ...btn, width: 44, background: '#dc2626' }}>
+        <img
+          src={Phone}
+          alt="End Call"
+          style={{ width: 20, height: 20, objectFit: 'contain', filter: 'invert(1)'  }}
+        />
+      </button>
 
       {toast && <Toast msg={toast} />}
     </footer>
