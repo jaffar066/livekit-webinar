@@ -2,12 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { useLocalParticipant, useRoomContext, useRemoteParticipants } from '@livekit/components-react';
 import {
   FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor,
-   FiMessageSquare, FiMoreHorizontal, FiX, FiChevronUp, FiCheck,
+  FiMessageSquare, FiMoreHorizontal, FiX, FiChevronUp, FiCheck,FiImage
 } from 'react-icons/fi';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import { type Mode, type Role } from './types';
 import RecordingButton from './RecordingButton';
 import Phone from '../assets/phone.png'
+import { BackgroundSelector } from './BackgroundSelector';
 
 export type RoomFooterProps = {
   roomName: string;
@@ -186,6 +187,77 @@ export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVi
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
+function CamMenu({ devices, activeId, onSelect, onClose, anchor }: {
+  devices: MediaDeviceInfo[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+  anchor: React.RefObject<HTMLDivElement | null>;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ bottom: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (anchor.current) {
+      const r = anchor.current.getBoundingClientRect();
+      setPos({ bottom: window.innerHeight - r.top + 8, left: r.left + r.width / 2 });
+    }
+  }, [anchor]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node) && !anchor.current?.contains(e.target as Node))
+        onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose, anchor]);
+
+  if (!pos) return null;
+
+  return (
+    <div ref={ref} style={{
+      position: 'fixed', bottom: pos.bottom, left: pos.left, transform: 'translateX(-50%)',
+      background: '#2a2a2a', border: '1px solid rgba(255,255,255,0.12)',
+      borderRadius: 12, padding: '6px 0', minWidth: 230, zIndex: 1000,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+    }}>
+      <div style={{ padding: '8px 16px 4px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Select Camera
+      </div>
+      {devices.length === 0
+        ? <div style={{ padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No devices found</div>
+        : devices.map(d => (
+          <button key={d.deviceId} onClick={() => { onSelect(d.deviceId); onClose(); }}
+            style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <span style={{ width: 18, display: 'flex', alignItems: 'center' }}>
+              {d.deviceId === activeId && <FiCheck size={14} color="#63b3ed" />}
+            </span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {d.label || `Device ${d.deviceId.slice(0, 8)}`}
+            </span>
+          </button>
+        ))
+      }
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '6px 0' }} />
+      <button
+        onClick={() => { onClose(); document.dispatchEvent(new CustomEvent('open-bg-selector')); }}
+        style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+      >
+        <span style={{ width: 18, display: 'flex', alignItems: 'center' }}>
+          <FiImage size={14} />
+        </span>
+        Backgrounds & effects
+      </button>
+    </div>
+  );
+}
+
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     clearTimeout(toastTimer.current);
@@ -286,16 +358,16 @@ useEffect(() => {
     />
   );
 
-  const camBtn = (
-    <SplitButton
-      anchor={camRef} icon={isCameraEnabled ? <FiVideo /> : <FiVideoOff />}
-      isOn={isCameraEnabled}
-      onMain={() => toggle(() => localParticipant.setCameraEnabled(!isCameraEnabled), 'Failed to toggle camera')}
-      onChevron={() => setOpenMenu(v => v === 'cam' ? null : 'cam')}
-      open={openMenu === 'cam'}
-      menu={<DeviceMenu title="Camera" devices={camDevices} activeId={activeCamId} onSelect={id => switchDevice('videoinput', id, setActiveCamId, 'Camera')} onClose={() => setOpenMenu(null)} anchor={camRef} />}
-    />
-  );
+const camBtn = (
+  <SplitButton
+    anchor={camRef} icon={isCameraEnabled ? <FiVideo /> : <FiVideoOff />}
+    isOn={isCameraEnabled}
+    onMain={() => toggle(() => localParticipant.setCameraEnabled(!isCameraEnabled), 'Failed to toggle camera')}
+    onChevron={() => setOpenMenu(v => v === 'cam' ? null : 'cam')}
+    open={openMenu === 'cam'}
+    menu={<CamMenu devices={camDevices} activeId={activeCamId} onSelect={id => switchDevice('videoinput', id, setActiveCamId, 'Camera')} onClose={() => setOpenMenu(null)} anchor={camRef} />}
+  />
+);
 
   const speakerBtn = (
     <SplitButton
@@ -324,6 +396,11 @@ useEffect(() => {
           {isHostOrCohost && <>{micBtn}{camBtn}</>}
           {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
           {speakerBtn}
+          <button onClick={onLeave} style={{ ...btn, width: 44, background: '#df3737' }}> <img
+          src={Phone}
+          alt="End Call"
+          style={{ width: 20, height: 20, objectFit: 'contain', filter: 'invert(1)'  }}
+        /></button>
           <button onClick={() => setDotsOpen(true)} style={{ ...btn, width: 44, background: '#333' }}>
             <FiMoreHorizontal />
             {unreadCount > 0 && !chatVisible && <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, background: '#dc2626', borderRadius: '50%' }} />}
@@ -341,17 +418,19 @@ useEffect(() => {
               {role === 'host' && <>
                 <ModalBtn icon={<FiCopy />} label="Copy co-host link" onClick={() => { copyLink('cohost'); setDotsOpen(false); }} />
                 <ModalBtn icon={<FiCopy />} label="Copy viewer link"  onClick={() => { copyLink('viewer');  setDotsOpen(false); }} />
-              </>}
+                </>}
             </div>
           </div>
         )}
         {toast && <Toast msg={toast} />}
+        <BackgroundSelector />
       </>
     );
   }
 
   // ─── Web ───────────────────────────────────────────────────────
   return (
+    <>
     <footer style={footerStyle}>
       {role === 'host' && <>
         {(mode === 'webinar' || mode === 'conference') && <button onClick={() => copyLink('cohost')} style={copyBtn}><FiCopy /> Co-host</button>}
@@ -391,6 +470,8 @@ useEffect(() => {
 
       {toast && <Toast msg={toast} />}
     </footer>
+    <BackgroundSelector />
+      </>
   );
 }
 
