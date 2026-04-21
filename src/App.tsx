@@ -5,6 +5,7 @@ import { JoinScreen } from './components/JoinScreen';
 import { RoomView } from '../src/components/RoomView';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
+import { OAuthSuccess } from '../src/components/OAuth';
 import { DashboardLayout } from './components/DashboardLayout';
 import RecordingsPage from './pages/RecordingsPage';
 import PaymentPage from './pages/PaymentPage';
@@ -172,6 +173,7 @@ export default function App() {
     <Routes>
       <Route path="/auth" element={authUser ? <Navigate to="/home" replace /> : <Login onLogin={handleAuth} onGoSignUp={() => navigate('/signup')} />} />
       <Route path="/signup" element={authUser ? <Navigate to="/home" replace /> : <SignUp onSignUp={handleAuth} onGoLogin={() => navigate('/auth')} />} />
+      <Route path="/oauth-success" element={<OAuthSuccess onLogin={handleAuth} />} />
       <Route path="/meeting" element={<MeetingRouteFallback />} />
       <Route path="/home" element={authUser ? HomeDashboard : <Navigate to="/auth" replace />} />
       <Route path="/recordings" element={authUser ? RecordingsDashboard : <Navigate to="/auth" replace />} />

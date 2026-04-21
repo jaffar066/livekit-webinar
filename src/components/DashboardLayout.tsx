@@ -17,12 +17,18 @@ export function DashboardLayout({ children, user, onLogout }: Props) {
   const sidebarRef = useRef<HTMLElement>(null);
 
   const u = user as Record<string, string> | null;
-  const displayName = u?.fName
-    ? `${u.fName} ${u.lName || ''}`.trim()
-    : u?.email || 'User';
-  const initials = u?.fName
-    ? `${u.fName[0]}${u.lName?.[0] || ''}`.toUpperCase()
-    : (u?.email?.[0]?.toUpperCase() || 'U');
+  const displayName =
+    u?.name || // ✅ Google users
+    (u?.fName ? `${u.fName} ${u.lName || ''}`.trim() : '') || // ✅ normal users
+    u?.email ||
+    'User';
+  console.log('Dashboard user:', u);
+  const initials =
+    u?.name
+      ? u.name.split(' ').map(n => n[0]).join('').toUpperCase()
+      : u?.fName
+        ? `${u.fName[0]}${u.lName?.[0] || ''}`.toUpperCase()
+        : (u?.email?.[0]?.toUpperCase() || 'U');
 
   const isActive = (path: string) => location.pathname === path;
 

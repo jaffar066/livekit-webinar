@@ -2212,3 +2212,16 @@ html {
   outline: 2px solid #0d6efd;
   outline-offset: 2px;
 }
+
+.btnStyle {
+  width: 160px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+  background-color: #f9f9f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}

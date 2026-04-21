@@ -2,13 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { useLocalParticipant, useRoomContext, useRemoteParticipants } from '@livekit/components-react';
 import {
   FiCopy, FiMic, FiMicOff, FiVideo, FiVideoOff, FiMonitor,
-  FiMessageSquare, FiMoreHorizontal, FiX, FiChevronUp, FiCheck,FiImage
+  FiMessageSquare, FiMoreHorizontal, FiX, FiChevronUp, FiCheck, FiImage
 } from 'react-icons/fi';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import { type Mode, type Role } from './types';
 import RecordingButton from './RecordingButton';
 import Phone from '../assets/phone.png'
 import { BackgroundSelector } from './BackgroundSelector';
+import { WhiteboardPanel } from './WhiteboardPanel';
+import { FiEdit2 } from 'react-icons/fi';
 
 export type RoomFooterProps = {
   roomName: string;
@@ -68,7 +70,7 @@ function useActiveDevice(kind: MediaDeviceKind) {
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices()
       .then(ds => setId(ds.find(d => d.kind === kind)?.deviceId ?? null))
-      .catch(() => {});
+      .catch(() => { });
   }, [kind]);
   return [id, setId] as const;
 }
@@ -174,6 +176,7 @@ export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVi
   const [activeMicId, setActiveMicId] = useActiveDevice('audioinput');
   const [activeCamId, setActiveCamId] = useActiveDevice('videoinput');
   const [activeSpeakerId, setActiveSpeakerId] = useActiveDevice('audiooutput');
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false);
 
   // Menu open states
   const [openMenu, setOpenMenu] = useState<'mic' | 'cam' | 'speaker' | null>(null);
@@ -187,76 +190,76 @@ export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVi
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
-function CamMenu({ devices, activeId, onSelect, onClose, anchor }: {
-  devices: MediaDeviceInfo[];
-  activeId: string | null;
-  onSelect: (id: string) => void;
-  onClose: () => void;
-  anchor: React.RefObject<HTMLDivElement | null>;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ bottom: number; left: number } | null>(null);
+  function CamMenu({ devices, activeId, onSelect, onClose, anchor }: {
+    devices: MediaDeviceInfo[];
+    activeId: string | null;
+    onSelect: (id: string) => void;
+    onClose: () => void;
+    anchor: React.RefObject<HTMLDivElement | null>;
+  }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [pos, setPos] = useState<{ bottom: number; left: number } | null>(null);
 
-  useLayoutEffect(() => {
-    if (anchor.current) {
-      const r = anchor.current.getBoundingClientRect();
-      setPos({ bottom: window.innerHeight - r.top + 8, left: r.left + r.width / 2 });
-    }
-  }, [anchor]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node) && !anchor.current?.contains(e.target as Node))
-        onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [onClose, anchor]);
-
-  if (!pos) return null;
-
-  return (
-    <div ref={ref} style={{
-      position: 'fixed', bottom: pos.bottom, left: pos.left, transform: 'translateX(-50%)',
-      background: '#2a2a2a', border: '1px solid rgba(255,255,255,0.12)',
-      borderRadius: 12, padding: '6px 0', minWidth: 230, zIndex: 1000,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-    }}>
-      <div style={{ padding: '8px 16px 4px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        Select Camera
-      </div>
-      {devices.length === 0
-        ? <div style={{ padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No devices found</div>
-        : devices.map(d => (
-          <button key={d.deviceId} onClick={() => { onSelect(d.deviceId); onClose(); }}
-            style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-          >
-            <span style={{ width: 18, display: 'flex', alignItems: 'center' }}>
-              {d.deviceId === activeId && <FiCheck size={14} color="#63b3ed" />}
-            </span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {d.label || `Device ${d.deviceId.slice(0, 8)}`}
-            </span>
-          </button>
-        ))
+    useLayoutEffect(() => {
+      if (anchor.current) {
+        const r = anchor.current.getBoundingClientRect();
+        setPos({ bottom: window.innerHeight - r.top + 8, left: r.left + r.width / 2 });
       }
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '6px 0' }} />
-      <button
-        onClick={() => { onClose(); document.dispatchEvent(new CustomEvent('open-bg-selector')); }}
-        style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-      >
-        <span style={{ width: 18, display: 'flex', alignItems: 'center' }}>
-          <FiImage size={14} />
-        </span>
-        Backgrounds & effects
-      </button>
-    </div>
-  );
-}
+    }, [anchor]);
+
+    useEffect(() => {
+      const handler = (e: MouseEvent) => {
+        if (!ref.current?.contains(e.target as Node) && !anchor.current?.contains(e.target as Node))
+          onClose();
+      };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }, [onClose, anchor]);
+
+    if (!pos) return null;
+
+    return (
+      <div ref={ref} style={{
+        position: 'fixed', bottom: pos.bottom, left: pos.left, transform: 'translateX(-50%)',
+        background: '#2a2a2a', border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: 12, padding: '6px 0', minWidth: 230, zIndex: 1000,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+      }}>
+        <div style={{ padding: '8px 16px 4px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Select Camera
+        </div>
+        {devices.length === 0
+          ? <div style={{ padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No devices found</div>
+          : devices.map(d => (
+            <button key={d.deviceId} onClick={() => { onSelect(d.deviceId); onClose(); }}
+              style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span style={{ width: 18, display: 'flex', alignItems: 'center' }}>
+                {d.deviceId === activeId && <FiCheck size={14} color="#63b3ed" />}
+              </span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {d.label || `Device ${d.deviceId.slice(0, 8)}`}
+              </span>
+            </button>
+          ))
+        }
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '6px 0' }} />
+        <button
+          onClick={() => { onClose(); document.dispatchEvent(new CustomEvent('open-bg-selector')); }}
+          style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+        >
+          <span style={{ width: 18, display: 'flex', alignItems: 'center' }}>
+            <FiImage size={14} />
+          </span>
+          Backgrounds & effects
+        </button>
+      </div>
+    );
+  }
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -267,22 +270,22 @@ function CamMenu({ devices, activeId, onSelect, onClose, anchor }: {
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   // Load all devices
-const loadDevices = useCallback(async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    stream.getTracks().forEach(track => track.stop());
-    const all = await navigator.mediaDevices.enumerateDevices();
-    setMicDevices(all.filter(d => d.kind === 'audioinput'));
-    setCamDevices(all.filter(d => d.kind === 'videoinput'));
-    setSpeakerDevices(all.filter(d => d.kind === 'audiooutput'));
-  } catch (err) {
-    console.error('Device load failed:', err);
-  }
-}, []);
-  
-useEffect(() => {
-  loadDevices();
-}, [loadDevices]);
+  const loadDevices = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      stream.getTracks().forEach(track => track.stop());
+      const all = await navigator.mediaDevices.enumerateDevices();
+      setMicDevices(all.filter(d => d.kind === 'audioinput'));
+      setCamDevices(all.filter(d => d.kind === 'videoinput'));
+      setSpeakerDevices(all.filter(d => d.kind === 'audiooutput'));
+    } catch (err) {
+      console.error('Device load failed:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDevices();
+  }, [loadDevices]);
 
   // Bluetooth auto-switch on device change
   useEffect(() => {
@@ -358,16 +361,16 @@ useEffect(() => {
     />
   );
 
-const camBtn = (
-  <SplitButton
-    anchor={camRef} icon={isCameraEnabled ? <FiVideo /> : <FiVideoOff />}
-    isOn={isCameraEnabled}
-    onMain={() => toggle(() => localParticipant.setCameraEnabled(!isCameraEnabled), 'Failed to toggle camera')}
-    onChevron={() => setOpenMenu(v => v === 'cam' ? null : 'cam')}
-    open={openMenu === 'cam'}
-    menu={<CamMenu devices={camDevices} activeId={activeCamId} onSelect={id => switchDevice('videoinput', id, setActiveCamId, 'Camera')} onClose={() => setOpenMenu(null)} anchor={camRef} />}
-  />
-);
+  const camBtn = (
+    <SplitButton
+      anchor={camRef} icon={isCameraEnabled ? <FiVideo /> : <FiVideoOff />}
+      isOn={isCameraEnabled}
+      onMain={() => toggle(() => localParticipant.setCameraEnabled(!isCameraEnabled), 'Failed to toggle camera')}
+      onChevron={() => setOpenMenu(v => v === 'cam' ? null : 'cam')}
+      open={openMenu === 'cam'}
+      menu={<CamMenu devices={camDevices} activeId={activeCamId} onSelect={id => switchDevice('videoinput', id, setActiveCamId, 'Camera')} onClose={() => setOpenMenu(null)} anchor={camRef} />}
+    />
+  );
 
   const speakerBtn = (
     <SplitButton
@@ -397,10 +400,10 @@ const camBtn = (
           {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
           {speakerBtn}
           <button onClick={onLeave} style={{ ...btn, width: 44, background: '#df3737' }}> <img
-          src={Phone}
-          alt="End Call"
-          style={{ width: 20, height: 20, objectFit: 'contain', filter: 'invert(1)'  }}
-        /></button>
+            src={Phone}
+            alt="End Call"
+            style={{ width: 20, height: 20, objectFit: 'contain', filter: 'invert(1)' }}
+          /></button>
           <button onClick={() => setDotsOpen(true)} style={{ ...btn, width: 44, background: '#333' }}>
             <FiMoreHorizontal />
             {unreadCount > 0 && !chatVisible && <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, background: '#dc2626', borderRadius: '50%' }} />}
@@ -415,14 +418,16 @@ const camBtn = (
                 <FiX onClick={() => setDotsOpen(false)} style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 20 }} />
               </div>
               <ModalBtn icon={<FiMessageSquare />} label="Chat" active={chatVisible} onClick={() => { onToggleChat?.(); setDotsOpen(false); }} />
+              <ModalBtn icon={<FiEdit2 />} label="Whiteboard" onClick={() => { setDotsOpen(false); setWhiteboardOpen(true); }} />
               {role === 'host' && <>
                 <ModalBtn icon={<FiCopy />} label="Copy co-host link" onClick={() => { copyLink('cohost'); setDotsOpen(false); }} />
-                <ModalBtn icon={<FiCopy />} label="Copy viewer link"  onClick={() => { copyLink('viewer');  setDotsOpen(false); }} />
-                </>}
+                <ModalBtn icon={<FiCopy />} label="Copy viewer link" onClick={() => { copyLink('viewer'); setDotsOpen(false); }} />
+              </>}
             </div>
           </div>
         )}
         {toast && <Toast msg={toast} />}
+        {whiteboardOpen && <WhiteboardPanel onClose={() => setWhiteboardOpen(false)} />}
         <BackgroundSelector />
       </>
     );
@@ -431,47 +436,57 @@ const camBtn = (
   // ─── Web ───────────────────────────────────────────────────────
   return (
     <>
-    <footer style={footerStyle}>
-      {role === 'host' && <>
-        {(mode === 'webinar' || mode === 'conference') && <button onClick={() => copyLink('cohost')} style={copyBtn}><FiCopy /> Co-host</button>}
-        {(mode === 'webinar' || mode === 'live')       && <button onClick={() => copyLink('viewer')} style={copyBtn}><FiCopy /> Viewer</button>}
-      </>}
+      <footer style={footerStyle}>
+        {role === 'host' && <>
+          {(mode === 'webinar' || mode === 'conference') && <button onClick={() => copyLink('cohost')} style={copyBtn}><FiCopy /> Co-host</button>}
+          {(mode === 'webinar' || mode === 'live') && <button onClick={() => copyLink('viewer')} style={copyBtn}><FiCopy /> Viewer</button>}
+        </>}
 
-      {isHostOrCohost && <>{micBtn}{camBtn}</>}
-      {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
-      {speakerBtn}
+        {isHostOrCohost && <>{micBtn}{camBtn}</>}
+        {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
+        {speakerBtn}
 
-      {isHostOrCohost && (
-        <button
-          onClick={() => toggle(() => localParticipant.setScreenShareEnabled(!isScreenShareEnabled), 'Failed to toggle screen share')}
-          disabled={otherIsSharing && !isScreenShareEnabled}
-          style={{ ...btn, width: 44, background: isScreenShareEnabled ? '#63b3ed' : '#333', opacity: otherIsSharing && !isScreenShareEnabled ? 0.5 : 1 }}
-        >
-          <FiMonitor />
-        </button>
-      )}
-
-      <button onClick={() => onToggleChat?.()} style={{ ...btn, width: 44, background: chatVisible ? 'rgba(99,179,237,0.2)' : '#333' }}>
-        <FiMessageSquare />
-        {unreadCount > 0 && !chatVisible && (
-          <div style={{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, background: '#dc2626', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 'bold' }}>
-            {unreadCount}
-          </div>
+        {isHostOrCohost && (
+          <button
+            onClick={() => toggle(() => localParticipant.setScreenShareEnabled(!isScreenShareEnabled), 'Failed to toggle screen share')}
+            disabled={otherIsSharing && !isScreenShareEnabled}
+            style={{ ...btn, width: 44, background: isScreenShareEnabled ? '#63b3ed' : '#333', opacity: otherIsSharing && !isScreenShareEnabled ? 0.5 : 1 }}
+          >
+            <FiMonitor />
+          </button>
         )}
-      </button>
 
-      <button onClick={onLeave} style={{ ...btn, width: 44, background: '#dc2626' }}>
-        <img
-          src={Phone}
-          alt="End Call"
-          style={{ width: 20, height: 20, objectFit: 'contain', filter: 'invert(1)'  }}
-        />
-      </button>
+        {isHostOrCohost && (
+          <button
+            onClick={() => setWhiteboardOpen(v => !v)}
+            style={{ ...btn, width: 44, background: whiteboardOpen ? '#63b3ed' : '#333' }}
+          >
+            <FiEdit2 />
+          </button>
+        )}
 
-      {toast && <Toast msg={toast} />}
-    </footer>
-    <BackgroundSelector />
-      </>
+        <button onClick={() => onToggleChat?.()} style={{ ...btn, width: 44, background: chatVisible ? 'rgba(99,179,237,0.2)' : '#333' }}>
+          <FiMessageSquare />
+          {unreadCount > 0 && !chatVisible && (
+            <div style={{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, background: '#dc2626', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 'bold' }}>
+              {unreadCount}
+            </div>
+          )}
+        </button>
+
+        <button onClick={onLeave} style={{ ...btn, width: 44, background: '#dc2626' }}>
+          <img
+            src={Phone}
+            alt="End Call"
+            style={{ width: 20, height: 20, objectFit: 'contain', filter: 'invert(1)' }}
+          />
+        </button>
+
+        {toast && <Toast msg={toast} />}
+      </footer>
+      {whiteboardOpen && <WhiteboardPanel onClose={() => setWhiteboardOpen(false)} />}
+      <BackgroundSelector />
+    </>
   );
 }
 

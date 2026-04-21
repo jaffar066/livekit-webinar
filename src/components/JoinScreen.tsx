@@ -35,5 +35,6 @@ export function JoinScreen({
         }}
       />
     </div>
+    
   );
 }

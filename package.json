@@ -15,6 +15,7 @@
     "@livekit/track-processors": "^0.7.2",
     "@opentok/client": "^2.33.1",
     "@stripe/stripe-js": "^8.1.0",
+    "fabric": "^7.3.1",
     "livekit-client": "^2.18.3",
     "lucide-react": "^1.7.0",
     "opentok-layout-js": "^5.5.0",

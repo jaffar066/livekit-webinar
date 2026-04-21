@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import GoogleImage from '../assets/google.png';
+import LinkdIn from '../assets/linkedin.png';
 
 const BASE = import.meta.env.VITE_SERVER_BASE_URL || 'http://localhost:3000';
 
@@ -41,6 +43,14 @@ export function Login({ onLogin, onGoSignUp }: Props) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally { setLoading(false); }
   };
+
+  const loginWithGoogle = () => {
+     window.location.href = `${BASE}/auth/google`
+  }
+
+  const loginWithLinkedIn = () => {
+    window.location.href = `${BASE}/auth/linkedin`
+  }
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +164,14 @@ export function Login({ onLogin, onGoSignUp }: Props) {
         </form>
         <button className="fp-link" onClick={() => { setFpEmail(email); goStep('fp-email'); }}>Forgot password?</button>
         <p className="auth-switch">Don't have an account? <button type="button" onClick={onGoSignUp}>Sign Up</button></p>
+      <div style={{ display: "flex", gap: "10px", justifyContent: 'center' }}>
+      <button onClick={loginWithGoogle} className='btnStyle'>
+        <img src={GoogleImage} alt="google png" style={{height: "20px", width: "20px"}} />
+      </button>
+        <button onClick={loginWithLinkedIn} className='btnStyle'>
+        <img src={LinkdIn} alt="linkedin png" style={{height: "20px", width: "20px"}} />
+      </button>
+     </div>
       </div>
     </div>
   );
