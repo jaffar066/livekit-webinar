@@ -77,6 +77,7 @@ export default function App() {
     localStorage.removeItem('token');
     setAuthUser(null);
     navigate('/auth');
+    window.location.reload();
   };
 
   const handleJoin = ({
@@ -102,6 +103,7 @@ export default function App() {
     window.sessionStorage.removeItem('livekit-session');
     setSessionInfo(null);
     navigate('/home');
+    window.location.reload();
   };
 
   const HomeDashboard = (

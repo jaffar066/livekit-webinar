@@ -22,7 +22,6 @@ export function DashboardLayout({ children, user, onLogout }: Props) {
     (u?.fName ? `${u.fName} ${u.lName || ''}`.trim() : '') || // ✅ normal users
     u?.email ||
     'User';
-  console.log('Dashboard user:', u);
   const initials =
     u?.name
       ? u.name.split(' ').map(n => n[0]).join('').toUpperCase()
