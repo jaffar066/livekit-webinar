@@ -86,11 +86,11 @@ export function WhiteboardPanel({ onClose }: { onClose: () => void }) {
     ctx.putImageData(snapshotDataRef.current, 0, 0);
   };
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     const ctx = contextRef.current;
     if (!canvas || !ctx) return;
-
+    canvas.setPointerCapture(e.pointerId);
     const rect = canvas.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
@@ -117,7 +117,7 @@ export function WhiteboardPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     const ctx = contextRef.current;
     if (!canvas || !ctx || !drawingStateRef.current.isDrawing) return;
@@ -165,7 +165,7 @@ export function WhiteboardPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const stopDrawing = () => {
+  const stopDrawing = (e:React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     const ctx = contextRef.current;
     if (!canvas || !ctx) return;
@@ -173,6 +173,7 @@ export function WhiteboardPanel({ onClose }: { onClose: () => void }) {
     if (!drawingStateRef.current.isDrawing) return;
 
     drawingStateRef.current.isDrawing = false;
+    canvas.releasePointerCapture(e.pointerId);
     ctx.globalAlpha = 1;
 
     // Save to history
@@ -545,15 +546,16 @@ export function WhiteboardPanel({ onClose }: { onClose: () => void }) {
           >
             <canvas
               ref={canvasRef}
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseOut={stopDrawing}
+              onPointerDown={startDrawing}
+              onPointerMove={draw}
+              onPointerUp={stopDrawing}
+              onPointerLeave={stopDrawing}
               style={{
                 display: 'block',
                 width: '100%',
                 height: '100%',
                 cursor: 'crosshair',
+                touchAction: 'none',
               }}
             />
           </div>
