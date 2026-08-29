@@ -89,7 +89,7 @@ export function DashboardLayout({ children, user, onLogout }: Props) {
             <span>Home</span>
           </button>
 
-          <button
+          {/* <button
             className={`dash-nav-item${isActive('/recordings') ? ' dash-nav-item--active' : ''}`}
             onClick={() => navTo('/recordings')}
           >
@@ -98,7 +98,7 @@ export function DashboardLayout({ children, user, onLogout }: Props) {
               <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
             </svg>
             <span>Recordings</span>
-          </button>
+          </button> */}
 
           {/* <button
             className={`dash-nav-item${isActive('/payment') ? ' dash-nav-item--active' : ''}`}
