@@ -6,7 +6,7 @@ import {
 } from 'react-icons/fi';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import { type Mode, type Role } from './types';
-import RecordingButton from './RecordingButton';
+// import RecordingButton from './RecordingButton';
 import Phone from '../assets/phone.png'
 import { BackgroundSelector } from './BackgroundSelector';
 import { WhiteboardPanel } from './WhiteboardPanel';
@@ -397,7 +397,7 @@ export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVi
       <>
         <footer style={footerStyle}>
           {isHostOrCohost && <>{micBtn}{camBtn}</>}
-          {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
+          {/* {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />} */}
           {speakerBtn}
           <button onClick={onLeave} style={{ ...btn, width: 44, background: '#df3737' }}> <img
             src={Phone}
@@ -443,7 +443,7 @@ export function RoomFooter({ roomName, role, mode, onLeave, onToggleChat, chatVi
         </>}
 
         {isHostOrCohost && <>{micBtn}{camBtn}</>}
-        {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />}
+        {/* {role === 'host' && <RecordingButton room={roomName} onToast={showToast} />} */}
         {speakerBtn}
 
         {isHostOrCohost && (
